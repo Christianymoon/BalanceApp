@@ -9,6 +9,9 @@ class DatabaseController:
     def create_tables(self):
         self.db.create_tables()
 
+    def drop_tables(self):
+        self.db.drop_tables()
+
 class UserDataController:
     @staticmethod
     def controller_set_userdata(name, gender):
@@ -80,11 +83,7 @@ class PassiveController:
         try:
             db.delete_passive(id)
         except Exception as e:
-            logging.error("Error during delete pasive {id} error: {e}")
-        
-
-
-
+            logging.error("Error during delete pasive {id} error: {e}")      
 
 class BalanceController:
     @staticmethod
@@ -124,7 +123,7 @@ class BalanceController:
 
 class TransactionController:
     @staticmethod
-    def controller_set_transaction(name, category, price, is_income): 
+    def controller_set_transaction(name, category, price, is_income, account_id): 
         """Transaction low both Balance and Liquidity"""
         db = Database()       
         try:
@@ -132,8 +131,7 @@ class TransactionController:
         except ZeroDivisionError:
             expense_percentage = 0.0
         db.set_transaction(name, category, price, is_income, expense_percentage)
-        BalanceController.controller_change_balance(price, is_income)
-        LiquidController.change(price, is_income)
+        ActiveController.controller_update_active(account_id, price, is_income)
 
     @staticmethod
     def delete_all(affect_amounts=True):
@@ -176,7 +174,6 @@ class TransactionController:
         except Exception as e:
             logging.error(f"Error during fetch sum of transactions {e}", exc_info=True)
 
-    
 class LiquidController:
     @staticmethod
     def set(amount):
@@ -222,8 +219,6 @@ class LiquidController:
         except Exception as e:
             logging.error(f"Error during change value {e}")
 
-
-
 class ActiveController:
     def __init__(self):
         pass
@@ -261,6 +256,28 @@ class ActiveController:
         except Exception as e:
             logging.error(f"Error during fetching active: {e}", exc_info=True)
             return []
+        
+    @staticmethod
+    def controller_update_active(id, mount, is_income):
+        db = Database()
+        try:
+            active = ActiveController.controller_fetch_active(id)
+            if is_income:
+                if active[4]:
+                    BalanceController.controller_change_balance(float(mount), True)
+                    LiquidController.change(float(mount), True)
+                else:
+                    BalanceController.controller_change_balance(float(mount), True)
+                db.update_active(id, float(active[3]) + float(mount))
+            else:
+                if active[4]:
+                    BalanceController.controller_change_balance(float(mount), False)
+                    LiquidController.change(float(mount), False)
+                else:
+                    BalanceController.controller_change_balance(float(mount), False)
+                db.update_active(id, float(active[3]) - float(mount))
+        except Exception as e:
+            logging.error(f"Error during update active: {e}", exc_info=True)
     
     @staticmethod
     def controller_delete_active(id):
@@ -290,6 +307,32 @@ class NewsController:
             logging.error(f"Error during get news {e}")
             return []
 
-        
+class LoanController:
+    def __init__(self):
+        pass 
+
+    @staticmethod
+
+    def calculate_interest(amount, interest):
+        try:
+            total_interest = float(amount) * (float(interest) / 100)
+            return total_interest
+        except Exception as e:
+            logging.error(f"Error during calculate interest {e}", exc_info=True)
+            return 0.0
+
+    def set(name, amount, interest, _id, to, _from):
+        db = Database()
+        try:
+            liquid_account = ActiveController.controller_fetch_active(_id)
+            if liquid_account and liquid_account[4]:
+                ActiveController.controller_update_active(_id, float(amount), False) # Baja liquidez
+                ActiveController.controller_set_active("Prestamo", name, float(amount), False) # Crea activo no liquido
+                total_payment = LoanController.calculate_interest(amount, interest) + float(amount)
+                db.set_borrowing(name, amount, interest, total_payment)
+        except Exception as e:
+            logging.error(f"Error during set loan {e}", exc_info=True)
+
+
 if __name__ == "__main__":
     pass

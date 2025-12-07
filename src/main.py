@@ -1,5 +1,6 @@
 import flet as ft
 from flet import Icons as icons
+from setup import log_dir
 from controller import (
     DatabaseController, 
     LiquidController, 
@@ -10,42 +11,12 @@ from controller import (
     ActiveController,
     UserDataController,
     NewsController,
+    LoanController
     )
 
 import os
 import logging
 from datetime import datetime
-
-DB_NAME = "financeapp.db"
-global SETUP
-SETUP = False
-
-
-def setup_logger():
-    try:
-        log_dir = os.path.join(FLET_APP_STORAGE_DATA, "applogs.log")
-    except Exception:
-        log_dir = "applogs.log"
-    logging.basicConfig(
-        filename=log_dir,
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-    )
-    logging.info("Logger initialized.")
-    logging.info(f"Log file located at: {log_dir}")
-    return log_dir
-
-
-def setup_database():
-    db = DatabaseController()
-    db.create_tables()
-
-
-try:
-    FLET_APP_STORAGE_DATA = os.getenv("FLET_APP_STORAGE_DATA")  # ANDROID MODE
-except Exception as e:
-    logging.error(f"Error accessing FLET_APP_STORAGE_DATA: {e}", exc_info=True)
-
 
 class Theme:
     bg = "#1a1a1a"
@@ -54,7 +25,6 @@ class Theme:
     text_secondary = "#888888"
     green_color = "#00ff88"
     red_color = "#ff4444"
-
 
 class Dialogs:
     def __init__(self, page: ft.Page):
@@ -69,7 +39,6 @@ class Dialogs:
                 "OK", on_click=lambda e: page.close(lost_data_dialog))],
         )
         return page.open(lost_data_dialog)
-
 
 class HeaderSection:
     def __init__(self, theme: Theme, page: ft.Page):
@@ -143,7 +112,6 @@ class HeaderSection:
 
         return self.header
 
-
 class Setup:
     def __init__(self, page: ft.Page):
         self.page = page
@@ -165,8 +133,6 @@ class Setup:
         if not name:
             return Dialogs.lost_data_dialog(self.page)
         UserDataController.controller_set_userdata(name, gender)
-        global SETUP
-        SETUP = False
         self.page.go("/")
 
     def draw(self):
@@ -200,12 +166,17 @@ class Setup:
         ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, expand=True)
         return self.setup
 
-
 class Settings:
     def __init__(self, theme: Theme, page: ft.Page):
         self.theme = theme
         self.page = page
         self.in_out_mode_value = self.page.client_storage.get("christianymoon.finance.in_out_mode_setting")
+
+    def handle_reset_database(self, e):
+        db_instance = DatabaseController()
+        db_instance.drop_tables()
+        db_instance.create_tables()
+        self.page.go("/")
 
     def handle_in_out_mode(self, e):
         try:
@@ -233,9 +204,14 @@ class Settings:
 
                         ft.Text("Modo solo transacciones")
                     ]
+                ),
+                ft.ElevatedButton(
+                    "Reiniciar Base de Datos",
+                    bgcolor=self.theme.red_color,
+                    color="#000000",
+                    on_click=self.handle_reset_database
                 )
             ], alignment=ft.MainAxisAlignment.CENTER, spacing=0, scroll=ft.ScrollMode.ADAPTIVE, expand=True)
-
 
 class TransactionSection:
     def __init__(self, theme: Theme, page: ft.Page):
@@ -247,65 +223,75 @@ class TransactionSection:
         name = self.add_transaction.content.controls[0].value
         category = self.add_transaction.content.controls[1].value
         price = self.add_transaction.content.controls[2].value
-        is_income = self.add_transaction.content.controls[3].value
-        if price == "" or name == "" or category == "":
+        account_id = self.add_transaction.content.controls[3].value
+        is_income = self.add_transaction.content.controls[4].value
+
+        if price == "" or name == "" or category == "" or account_id is None:
             return Dialogs.lost_data_dialog(self.page)
         TransactionController.controller_set_transaction(
-            name, category, price, is_income)
+            name, category, price, is_income, account_id)
 
         self.page.go("/")
 
     def draw(self, header):
+        self.accounts_actives = ActiveController.controller_fetch_actives()
         self.add_transaction = ft.Container(
             content=ft.Column([
-                ft.TextField(
-                    hint_text="Nombre",
-                    hint_style=ft.TextStyle(color=self.theme.text_secondary),
-                    text_style=ft.TextStyle(color=self.theme.text_primary),
-                    border=ft.InputBorder.NONE,
-                    prefix_icon=icons.PERSON,
-                    bgcolor=self.theme.fg,
-                    filled=True,
+            ft.TextField(
+                hint_text="Nombre",
+                hint_style=ft.TextStyle(color=self.theme.text_secondary),
+                text_style=ft.TextStyle(color=self.theme.text_primary),
+                border=ft.InputBorder.NONE,
+                prefix_icon=icons.PERSON,
+                bgcolor=self.theme.fg,
+                filled=True,
+            ),
+            ft.TextField(
+                hint_text="Categoria",
+                hint_style=ft.TextStyle(color=self.theme.text_secondary),
+                text_style=ft.TextStyle(color=self.theme.text_primary),
+                border=ft.InputBorder.NONE,
+                prefix_icon=icons.FILTER,
+                bgcolor=self.theme.fg,
+                filled=True,
+            ),
+            ft.TextField(
+                hint_text="Monto",
+                hint_style=ft.TextStyle(color=self.theme.text_secondary),
+                text_style=ft.TextStyle(color=self.theme.text_primary),
+                border=ft.InputBorder.NONE,
+                prefix_icon=icons.ATTACH_MONEY,
+                bgcolor=self.theme.fg,
+                filled=True,
+                keyboard_type=ft.KeyboardType.NUMBER,
+                input_filter=ft.InputFilter(
+                allow=True, regex_string=r"^\d*\.?\d*$"),
+            ),
+            ft.Dropdown(
+                hint_text="Cuenta origen",
+                options=[ft.dropdown.Option(text=f"{account[2]} ${account[3]}", key=account[0]) for account in self.accounts_actives if account[4]],
+                text_style=ft.TextStyle(color=self.theme.green_color),
+                bgcolor=self.theme.fg,
+                filled=True,
+                border=ft.InputBorder.NONE,
+            ),
+            ft.Checkbox(label="Suma Capital", value=False),
+            ft.Row([
+                ft.IconButton(
+                icon=icons.DOUBLE_ARROW,
+                icon_color=self.theme.text_primary,
+                on_click=self.add_transaction_database,
+                icon_size=24
                 ),
-                ft.TextField(
-                    hint_text="Categoria",
-                    hint_style=ft.TextStyle(color=self.theme.text_secondary),
-                    text_style=ft.TextStyle(color=self.theme.text_primary),
-                    border=ft.InputBorder.NONE,
-                    prefix_icon=icons.FILTER,
-                    bgcolor=self.theme.fg,
-                    filled=True,
-                ),
-                ft.TextField(
-                    hint_text="Monto",
-                    hint_style=ft.TextStyle(color=self.theme.text_secondary),
-                    text_style=ft.TextStyle(color=self.theme.text_primary),
-                    border=ft.InputBorder.NONE,
-                    prefix_icon=icons.ATTACH_MONEY,
-                    bgcolor=self.theme.fg,
-                    filled=True,
-                    keyboard_type=ft.KeyboardType.NUMBER,
-                    input_filter=ft.InputFilter(
-                        allow=True, regex_string=r"^\d*\.?\d*$"),
-                ),
-                ft.Checkbox(label="Suma Capital", value=False),
-                ft.Row([
-                    ft.IconButton(
-                        icon=icons.HANDSHAKE,
-                        icon_color=self.theme.text_primary,
-                        on_click=self.add_transaction_database,
-                        icon_size=24
-                    ),
-                    ft.Text("Transaccionar", color=self.theme.text_primary,
-                            size=14, weight=ft.FontWeight.W_500)
-                ]),
+                ft.Text("Transaccionar", color=self.theme.text_primary,
+                    size=14, weight=ft.FontWeight.W_500)
+            ]),
             ])
         )
         return ft.Column([
             header.create("Transacciones", return_page=True),
             self.add_transaction,
         ], spacing=0, scroll=ft.ScrollMode.AUTO)
-
 
 class BalanceSection:
     def __init__(self, theme: Theme, page: ft.Page):
@@ -345,7 +331,6 @@ class BalanceSection:
             ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, expand=True),
         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
         return self.balance_content
-
 
 class PassiveSection:
     def __init__(self, theme: Theme, page: ft.Page):
@@ -518,7 +503,6 @@ class PassiveSection:
             self.passive_list,
         ], spacing=0, scroll=ft.ScrollMode.AUTO, alignment=ft.MainAxisAlignment.CENTER)
 
-
 class ActiveSection:
     def __init__(self, theme: Theme, page: ft.Page):
         self.theme = theme
@@ -678,13 +662,6 @@ class ActiveSection:
                     icon_size=24,
                 ),
                 ft.IconButton(
-                    icon=icons.EDIT,
-                    icon_color=self.theme.text_primary,
-                    tooltip="Editar",
-                    on_click=self.show_checkboxes,
-                    icon_size=24,
-                ),
-                ft.IconButton(
                     icon=icons.FILTER_LIST,
                     icon_color=self.theme.text_primary,
                     tooltip="Seleccionar",
@@ -696,7 +673,6 @@ class ActiveSection:
         ],)
         self.add_active_list(ActiveController.controller_fetch_actives())
         return self.active_section
-
 
 class NewsSection:
     def __init__(self, theme: Theme, page: ft.Page):
@@ -762,6 +738,139 @@ class NewsSection:
         self.parse_news()        
         return self.news_section
 
+class BorrowSection:
+    def __init__(self, theme: Theme, page: ft.Page):
+        self.theme = theme
+        self.page = page
+
+
+    def get_loan_data(self, e):
+        loan_name = self.loan_form.controls[0].value
+        loan_amount = self.loan_form.controls[1].value
+        loan_interest = self.loan_form.controls[2].value
+        source_account = self.loan_form.controls[3].value
+        loan_to = self.group1_value.current.value
+        loan_from = self.group2_value.current.value
+
+        if loan_name == "" or loan_amount == "" or loan_interest == "" or source_account is None:
+            return Dialogs.lost_data_dialog(self.page)
+
+        return {
+            "name": loan_name,
+            "amount": float(loan_amount),
+            "interest": float(loan_interest),
+            "source_account": source_account,
+            "to": loan_to,
+            "from": loan_from,
+        }
+    
+    def set_loan_database(self, e):
+        loan_data = self.get_loan_data(e)
+        if not loan_data:
+            return
+        LoanController.set(
+            loan_data["name"],
+            loan_data["amount"],
+            loan_data["interest"],
+            loan_data["source_account"],
+            loan_data["to"],
+            loan_data["from"],
+        )
+        self.page.go("/")
+
+    def draw(self, header):
+        self.group1_value = ft.Ref[ft.RadioGroup]()
+        self.group2_value = ft.Ref[ft.RadioGroup]()
+        self.accounts_actives = ActiveController.controller_fetch_actives()
+        loan_type_options = ft.Column([
+            ft.Text("Prestamo a:", color=self.theme.text_primary,),
+            ft.Row([
+                ft.RadioGroup(
+                    ref=self.group1_value,
+                    value="terciary",
+                    content=ft.Row([
+                        ft.Radio(value="terciary", label="Terceros"),
+                    ], spacing=20),
+                    on_change=lambda e: None,
+                ),
+            ]),
+
+
+            ft.Text("Desde:", color=self.theme.text_primary,),
+            ft.Row([
+                ft.RadioGroup(
+                    ref=self.group2_value,
+                    value="liquidity",
+                    content=ft.Row([
+                        ft.Radio(value="liquidity", label="Liquidez"),
+                        ft.Radio(value="bank", label="Crédito"),
+                    ], spacing=20),
+                    on_change=lambda e: None,
+                ),
+            ]),
+        ], spacing=0)
+           
+        self.loan_form = ft.Column([
+            ft.TextField(
+            hint_text="Nombre del préstamo",
+            border=ft.InputBorder.NONE,
+            hint_style=ft.TextStyle(color=self.theme.text_secondary),
+            text_style=ft.TextStyle(color=self.theme.text_primary),
+            prefix_icon=icons.PERSON,
+            bgcolor=self.theme.fg,
+            filled=True,
+            ),
+            ft.TextField(
+            hint_text="Monto del préstamo",
+            hint_style=ft.TextStyle(color=self.theme.text_secondary),
+            text_style=ft.TextStyle(color=self.theme.text_primary),
+            border=ft.InputBorder.NONE,
+            prefix_icon=icons.ATTACH_MONEY,
+            bgcolor=self.theme.fg,
+            filled=True,
+            keyboard_type=ft.KeyboardType.NUMBER,
+            input_filter=ft.InputFilter(allow=True, regex_string=r"^\d*\.?\d*$"),
+            ),
+            ft.TextField(
+            hint_text="Porcentaje de interés (%)",
+            hint_style=ft.TextStyle(color=self.theme.text_secondary),
+            text_style=ft.TextStyle(color=self.theme.text_primary),
+            border=ft.InputBorder.NONE,
+            prefix_icon=icons.PERCENT,
+            bgcolor=self.theme.fg,
+            filled=True,
+            keyboard_type=ft.KeyboardType.NUMBER,
+            input_filter=ft.InputFilter(allow=True, regex_string=r"^\d*\.?\d*$"),
+            ),
+            ft.Dropdown(
+                hint_text="Cuenta origen",
+                options=[ft.dropdown.Option(text=f"{account[2]} ${account[3]}", key=account[0]) for account in self.accounts_actives if account[4]],
+                text_style=ft.TextStyle(color=self.theme.green_color),
+                bgcolor=self.theme.fg,
+                filled=True,
+                border=ft.InputBorder.NONE,
+            ),
+        ])
+
+        loan_controls = ft.Row([
+            ft.TextButton("Agregar", on_click=lambda e: self.set_loan_database(e)),
+            ft.TextButton("Calcular", on_click=lambda e: None),
+        ])
+
+
+        loan_list = ft.Column([], spacing=10, scroll=ft.ScrollMode.ADAPTIVE)
+
+
+        return ft.Column([
+            header.create("Préstamos", return_page=True),
+            loan_type_options,
+            ft.Divider(height=1, color="#333333"),
+            self.loan_form,
+            loan_controls,
+            ft.Divider(height=1, color="#333333"),
+            loan_list,
+        ], spacing=15, scroll=ft.ScrollMode.ADAPTIVE)
+
 class MainSection:
     def __init__(self, theme: Theme, page: ft.Page):
         self.theme = theme
@@ -812,8 +921,7 @@ class MainSection:
 
     def on_search(self, e):
         if e.control.value == "log":
-            log_file = open(os.path.join(
-                FLET_APP_STORAGE_DATA, "applogs.log"), "r")
+            log_file = open(os.path.join(log_dir), "r")
             logs = log_file.read()
             log_file.close()
             logs_ = ft.Text(logs, color=self.theme.text_primary,
@@ -888,39 +996,6 @@ class MainSection:
                 )
             )
 
-    def delete_all_transactions(self, e):
-
-        def yes(e):
-            TransactionController.delete_all(affect_amounts=True)
-            self.stock_list.controls.clear()
-            self.add_stock_list(
-                TransactionController.controller_fetch_transactions())
-            self.update()
-            self.page.close(self.dlg_modal)
-
-        def no(e):
-            TransactionController.delete_all(affect_amounts=False)
-            self.stock_list.controls.clear()
-            self.add_stock_list(
-                TransactionController.controller_fetch_transactions())
-            self.update()
-            self.page.close(self.dlg_modal)
-
-        self.dlg_modal = ft.AlertDialog(
-            modal=True,
-            title=ft.Text("Atencion"),
-            content=ft.Text(
-                "¿Deseas que la eliminacion de las transacciones afecte al balance y liquidez?"),
-            actions=[
-                ft.TextButton("Yes", on_click=yes),
-                ft.TextButton("No", on_click=no),
-                ft.TextButton(
-                    "Cancel", on_click=lambda e: self.page.close(self.dlg_modal))
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-        )
-
-        self.page.open(self.dlg_modal)
 
     def update(self):
             portfolio_mode = self.page.client_storage.get("christianymoon.finance.portfolio_mode")
@@ -1072,15 +1147,15 @@ class MainSection:
                     ft.Text("Pasivos", color=self.theme.text_primary, size=12)
                 ], alignment=ft.MainAxisAlignment.CENTER),
                 ft.Column([
+                    ft.IconButton(icon=icons.ATTACH_MONEY, icon_color=self.theme.text_primary, 
+                                  icon_size=24, on_click=lambda e: self.page.go("/borrows")),
+                    ft.Text("Prestamos", color=self.theme.text_primary, size=12)
+                ], alignment=ft.MainAxisAlignment.CENTER),
+                ft.Column([
                     ft.IconButton(icon=icons.NEWSPAPER, icon_color=self.theme.text_primary, 
                                   icon_size=24, on_click=lambda e: self.page.go("/news")),
                     ft.Text("Noticias", color=self.theme.text_primary, size=12)
                 ], alignment=ft.MainAxisAlignment.CENTER),
-                # ft.Column([
-                #     ft.IconButton(icon=icons.WALLET,
-                #                   icon_color=self.theme.text_primary, icon_size=24),
-                #     ft.Text("Wallet", color=self.theme.text_primary, size=12)
-                # ], alignment=ft.MainAxisAlignment.CENTER),
             ], alignment=ft.MainAxisAlignment.SPACE_EVENLY),
             padding=ft.padding.symmetric(horizontal=20, vertical=20),
             bgcolor="#000000"
@@ -1091,10 +1166,7 @@ class MainSection:
                 ft.Text("Operaciones", color=self.theme.text_primary,
                         size=16, weight=ft.FontWeight.W_500),
                 ft.Row([ft.IconButton(icon=icons.ADD, icon_color=self.theme.text_primary,
-                                      icon_size=24, on_click=lambda e: self.page.go("/transaction")),
-                        ft.IconButton(icon=icons.DELETE, icon_color=self.theme.text_primary,
-                                      icon_size=24, on_click=self.delete_all_transactions)]),
-
+                                      icon_size=24, on_click=lambda e: self.page.go("/transaction"))]),
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             padding=ft.padding.symmetric(horizontal=20, vertical=0),
             bgcolor="#000000"
@@ -1108,7 +1180,6 @@ class MainSection:
             top_picks_header,
             self.stock_list
         ], expand=True, spacing=0)
-
 
 class ErrorPage():
     def __init__(self, theme: Theme, page: ft.Page):
@@ -1127,7 +1198,6 @@ class ErrorPage():
             ], scroll=ft.ScrollMode.AUTO, expand=True),
             ft.ElevatedButton("Volver al inicio", bgcolor=self.theme.green_color,
                               color="#000000", on_click=lambda e: self.page.go("/"))], expand=True)
-
 
 class FinanceApp:
     def __init__(self, page: ft.Page):
@@ -1152,14 +1222,15 @@ class FinanceApp:
         self.settings_section = Settings(self.theme, page)
         self.error_section = ErrorPage(self.theme, page)
         self.news_section = NewsSection(self.theme, page)
+        self.borrow_section = BorrowSection(self.theme, page)
         self.setup_section = None
         self.errors = ""
-        logdir = setup_logger()
         self.page.run_thread(self._on_mount)
 
     def _on_mount(self):
         try:
-            setup_database()
+            db = DatabaseController()
+            db.create_tables()
             logging.info("Application mounted successfully.")
             logging.info(f"Setup database")
             if UserDataController.controller_fetch_userdata() is None:
@@ -1200,16 +1271,19 @@ class FinanceApp:
             if self.page.route == "/news":
                 self.page.views.append(
                     ft.View("/news", [self.news_section.draw(self.header)], bgcolor="#000000"))
+            if self.page.route == "/borrows":
+                self.page.views.append(
+                    ft.View("/borrows", [self.borrow_section.draw(self.header)], bgcolor="#000000"))
             if self.page.route == "/error":
                 self.page.views.append(
                     ft.View("/error", [self.error_section.draw(self.errors)], bgcolor="#000000"))
+            
             self.page.update()
         except Exception as e:
             logging.error(f"Error during route change: {e}", exc_info=True)
             self.errors = str(e)
             self.page.go("/error")
             self.page.update()
-
 
 def main(page: ft.Page):
     FinanceApp(page)
