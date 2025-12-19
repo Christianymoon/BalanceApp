@@ -1,6 +1,8 @@
 from database import Database
 import logging
 import httpx
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 class DatabaseController:
     def __init__(self):
@@ -126,11 +128,13 @@ class TransactionController:
     def controller_set_transaction(name, category, price, is_income, account_id): 
         """Transaction low both Balance and Liquidity"""
         db = Database()       
+        created_at = datetime.now().astimezone().strftime("%d/%m/%Y %H:%M")
+
         try:
             expense_percentage = float(price) / BalanceController.controller_fetch_balance() * 100
         except ZeroDivisionError:
             expense_percentage = 0.0
-        db.set_transaction(name, category, price, is_income, expense_percentage)
+        db.set_transaction(name, category, price, is_income, expense_percentage, created_at)
         ActiveController.controller_update_active(account_id, price, is_income)
 
     @staticmethod
@@ -224,7 +228,7 @@ class ActiveController:
         pass
     
     @staticmethod
-    def controller_set_active(active_type, name, amount, is_liquid):
+    def controller_set_active(name, active_type, amount, is_liquid):
         db = Database()
         try:
             db.set_active(active_type, name, amount, is_liquid)
@@ -323,11 +327,17 @@ class LoanController:
 
     def set(name, amount, interest, _id, to, _from):
         db = Database()
+        if _from == "bank":
+            PassiveController.controller_set_passive(name, "Prestamo", float(amount), False)
+            ActiveController.controller_set_active(name, "Prestamo", float(amount), False)
+            total_payment = LoanController.calculate_interest(amount, interest) + float(amount)
+            db.set_borrowing(name, amount, interest, total_payment)
+            return
         try:
             liquid_account = ActiveController.controller_fetch_active(_id)
             if liquid_account and liquid_account[4]:
                 ActiveController.controller_update_active(_id, float(amount), False) # Baja liquidez
-                ActiveController.controller_set_active("Prestamo", name, float(amount), False) # Crea activo no liquido
+                ActiveController.controller_set_active(name, "Prestamo", float(amount), False) # Crea activo no liquido
                 total_payment = LoanController.calculate_interest(amount, interest) + float(amount)
                 db.set_borrowing(name, amount, interest, total_payment)
         except Exception as e:

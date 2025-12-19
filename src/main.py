@@ -521,7 +521,7 @@ class ActiveSection:
             return Dialogs.lost_data_dialog(self.page)
 
         ActiveController.controller_set_active(
-            active_type, name, amount, is_liquid)
+            name, active_type, amount, is_liquid)
         self.refresh_actives()
 
     def parse_selected_actives(self, e):
@@ -976,7 +976,9 @@ class MainSection:
                             ft.Text(item[1], color=self.theme.text_primary,
                                     size=14, weight=ft.FontWeight.W_500),
                             ft.Text(
-                                item[2], color=self.theme.text_secondary, size=12)
+                                item[2], color=self.theme.text_secondary, size=12),
+                            ft.Text(
+                                item[6], color=self.theme.text_secondary, size=12),
                         ], spacing=2, expand=True),
                         ft.Container(
                             content=ft.Icon(

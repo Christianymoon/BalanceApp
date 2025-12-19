@@ -99,12 +99,12 @@ class Database:
         conn.commit()
         cursor.close()
     
-    def set_transaction(self, name, category, price, is_income, expense_percentage):
+    def set_transaction(self, name, category, price, is_income, expense_percentage, created_at=None):
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO transactions (name, category, price, is_income, expense_percentage)
-            VALUES (?, ?, ?, ?, ?)
-        """, (name, category, price, is_income, expense_percentage))
+            INSERT INTO transactions (name, category, price, is_income, expense_percentage, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (name, category, price, is_income, expense_percentage, created_at))
         conn.commit()
         cursor.close()
 
