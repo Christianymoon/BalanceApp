@@ -297,26 +297,11 @@ class ActiveController:
         except Exception as e:
             logging.error(f"Error during delete active: {e}", exc_info=True)
 
-class NewsController:
-    def __init__(self):
-        self.endpoint = "https://balance-news.onrender.com/news"
-        
-    def get_news(self):
-        try:
-            data = httpx.get(self.endpoint, timeout=10)
-            parsed_data = data.json()
-            return parsed_data
-        
-        except Exception as e:
-            logging.error(f"Error during get news {e}")
-            return []
-
 class LoanController:
     def __init__(self):
         pass 
 
     @staticmethod
-
     def calculate_interest(amount, interest):
         try:
             total_interest = float(amount) * (float(interest) / 100)

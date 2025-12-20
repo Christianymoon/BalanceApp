@@ -10,7 +10,6 @@ from controller import (
     BalanceController, 
     ActiveController,
     UserDataController,
-    NewsController,
     LoanController
     )
 
@@ -674,70 +673,6 @@ class ActiveSection:
         self.add_active_list(ActiveController.controller_fetch_actives())
         return self.active_section
 
-class NewsSection:
-    def __init__(self, theme: Theme, page: ft.Page):
-        self.theme = theme
-        self.page = page
-        self.controller = NewsController()
-
-    def news_card(self, notice):
-        date = datetime.fromisoformat(notice["published_at"].replace("Z", "+00:00"))
-        author = "Desconocido"
-        if notice["author"]:
-            author = notice["author"]["name"]
-    
-        return ft.Container(
-            content=ft.Row(
-                [
-                    ft.Container(content=ft.Image(notice["image"], fit=ft.ImageFit.COVER), height=100, width=100),
-                    ft.Column(
-                    [
-                        ft.Text(notice["title"], size=17),
-                        ft.Text(author, size=13, color=self.theme.text_secondary),
-                        ft.Text(date.strftime("%d/%m/%Y %H:%M:%S"), size=13),
-                    ], expand=True)
-                ]
-            ), padding=ft.padding.all(10), bgcolor=self.theme.fg
-        )
-
-    def parse_news(self):
-        loading = ft.Row(
-            controls=[
-                ft.ProgressRing(width=32, height=32, stroke_width=3, color=self.theme.text_primary),
-                ft.Text("Cargando", color=self.theme.text_secondary)
-            ],
-            alignment=ft.MainAxisAlignment.CENTER,
-        )
-        self.news_section.controls[2].controls.clear()
-        self.news_section.controls[2].controls.append(loading)
-        self.page.update()
-
-        news = self.controller.get_news()
-        self.news_section.controls[2].controls.clear()
-        for notice in news:
-            self.news_section.controls[2].controls.append(
-                self.news_card(notice)
-            )
-        self.page.update()
-
-
-    def draw(self, header):
-        self.tool_bar = ft.Row(
-            controls=[
-                ft.IconButton(icon=icons.REFRESH, on_click=lambda e: self.parse_news(), icon_color=self.theme.text_primary),
-            ], expand=True
-        )
-        self.news_section = ft.Column(
-            controls=[
-                header.create("Noticias Financieras", return_page=True),
-                self.tool_bar,
-                ft.Column(controls=[]),
-            ], expand=True, scroll=ft.ScrollMode.ADAPTIVE
-        )
-
-        self.parse_news()        
-        return self.news_section
-
 class BorrowSection:
     def __init__(self, theme: Theme, page: ft.Page):
         self.theme = theme
@@ -1153,11 +1088,6 @@ class MainSection:
                                   icon_size=24, on_click=lambda e: self.page.go("/borrows")),
                     ft.Text("Prestamos", color=self.theme.text_primary, size=12)
                 ], alignment=ft.MainAxisAlignment.CENTER),
-                ft.Column([
-                    ft.IconButton(icon=icons.NEWSPAPER, icon_color=self.theme.text_primary, 
-                                  icon_size=24, on_click=lambda e: self.page.go("/news")),
-                    ft.Text("Noticias", color=self.theme.text_primary, size=12)
-                ], alignment=ft.MainAxisAlignment.CENTER),
             ], alignment=ft.MainAxisAlignment.SPACE_EVENLY),
             padding=ft.padding.symmetric(horizontal=20, vertical=20),
             bgcolor="#000000"
@@ -1223,7 +1153,6 @@ class FinanceApp:
         self.main_section = MainSection(self.theme, page)
         self.settings_section = Settings(self.theme, page)
         self.error_section = ErrorPage(self.theme, page)
-        self.news_section = NewsSection(self.theme, page)
         self.borrow_section = BorrowSection(self.theme, page)
         self.setup_section = None
         self.errors = ""
@@ -1270,9 +1199,6 @@ class FinanceApp:
             if self.page.route == "/active":
                 self.page.views.append(
                     ft.View("/active", [self.active_section.draw(self.header)], bgcolor="#000000"))
-            if self.page.route == "/news":
-                self.page.views.append(
-                    ft.View("/news", [self.news_section.draw(self.header)], bgcolor="#000000"))
             if self.page.route == "/borrows":
                 self.page.views.append(
                     ft.View("/borrows", [self.borrow_section.draw(self.header)], bgcolor="#000000"))
