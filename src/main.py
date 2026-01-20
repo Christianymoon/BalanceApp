@@ -13,6 +13,8 @@ from controller import (
     LoanController
     )
 
+from views.loan_view import LoanView
+
 import os
 import logging
 from datetime import datetime
@@ -678,6 +680,15 @@ class BorrowSection:
         self.theme = theme
         self.page = page
 
+    def handle_loan(self, e, value):
+        print(value)
+        self.page.data = {
+            "id": value
+        }
+
+        self.page.go("/loan")
+        #TODO HANDLE LOAN TO NEW PAGE
+
 
     def get_loan_data(self, e):
         loan_name = self.loan_form.controls[0].value
@@ -750,7 +761,7 @@ class BorrowSection:
                     padding=ft.padding.symmetric(horizontal=10, vertical=15),
                     bgcolor="#000000",
                     border_radius=10,
-                    on_click=lambda e: print("Selected loan")
+                    on_click=lambda e: self.handle_loan(e, loan[0])
                 )
             )
         self.page.update()
@@ -1205,6 +1216,7 @@ class FinanceApp:
         self.error_section = ErrorPage(self.theme, page)
         self.borrow_section = BorrowSection(self.theme, page)
         self.setup_section = None
+        self.loan_section = LoanView(self.page, self.theme)
         self.errors = ""
         self.page.run_thread(self._on_mount)
 
@@ -1255,7 +1267,9 @@ class FinanceApp:
             if self.page.route == "/error":
                 self.page.views.append(
                     ft.View("/error", [self.error_section.draw(self.errors)], bgcolor="#000000"))
-            
+            if self.page.route == "/loan":
+                self.page.views.append(
+                    ft.View("/loan", [self.loan_section.create()], bgcolor="#000000", appbar=ft.AppBar(title=ft.Text("Préstamos")), navigation_bar=ft.NavigationBar()))
             self.page.update()
         except Exception as e:
             logging.error(f"Error during route change: {e}", exc_info=True)
