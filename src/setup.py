@@ -15,3 +15,5 @@ try:
 
 except Exception as e:
     logging.error(f"Error initializing logger: {e}", exc_info=True)
+    logging.info("Logger initialized at ./applogs.log")
+    log_dir = "./applogs.log"

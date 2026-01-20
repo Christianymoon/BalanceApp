@@ -116,10 +116,9 @@ class Setup:
         self.page = page
         self.theme = Theme()
         self.page.client_storage.clear()
-        logging.info("Setting up Liquid to initial value 0")
-        LiquidController.set(0)
-        logging.info("Setting up Balance to initial value 0")
-        BalanceController.controller_set_balance(0, True)
+        logging.info("Setting initial values")
+        db_instance = DatabaseController()
+        db_instance.init_seed()
         logging.info("Setting up mode in out in False")
         self.page.client_storage.set("christianymoon.finance.in_out_mode_setting", False)
         logging.info("Setting up portfolio mode in False")
@@ -175,6 +174,7 @@ class Settings:
         db_instance = DatabaseController()
         db_instance.drop_tables()
         db_instance.create_tables()
+        db_instance.init_seed()
         self.page.go("/")
 
     def handle_in_out_mode(self, e):
@@ -687,6 +687,9 @@ class BorrowSection:
         loan_to = self.group1_value.current.value
         loan_from = self.group2_value.current.value
 
+        if loan_from == "bank":
+            source_account = "bank"
+
         if loan_name == "" or loan_amount == "" or loan_interest == "" or source_account is None:
             return Dialogs.lost_data_dialog(self.page)
 
@@ -713,6 +716,53 @@ class BorrowSection:
         )
         self.page.go("/")
 
+    def get_all_loans(self, list_control):
+        loans = LoanController.controller_fetch_loans()
+        list_control.controls.clear()
+        for loan in loans:
+            list_control.controls.append(
+                ft.Container(
+                    content=ft.Row([
+                        ft.Container(
+                            content=ft.Icon(icons.CREDIT_CARD,
+                                            color=self.theme.text_primary, size=24),
+                            width=40,
+                            height=40,
+                            bgcolor=self.theme.fg,
+                            border_radius=20,
+                            alignment=ft.alignment.center
+                        ),
+                        ft.Column([
+                            ft.Text(loan[1], color=self.theme.text_primary,
+                                    size=14, weight=ft.FontWeight.W_500),
+                            ft.Text(
+                                str(loan[7]), color=self.theme.text_secondary, size=12)
+                        ], spacing=2, expand=True),
+                        ft.Column([
+                            ft.Text(
+                                f"${loan[2]}", color=self.theme.text_primary, size=14, weight=ft.FontWeight.W_500),
+                            ft.Text(f"{loan[3]}%",
+                                    color=self.theme.text_secondary, size=12),
+                            ft.Text(
+                                "Pagado" if loan[6] else "Pendiente", color=self.theme.green_color if loan[6] else self.theme.red_color, size=12)
+                        ], horizontal_alignment=ft.CrossAxisAlignment.END, spacing=2)
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    padding=ft.padding.symmetric(horizontal=10, vertical=15),
+                    bgcolor="#000000",
+                    border_radius=10,
+                    on_click=lambda e: print("Selected loan")
+                )
+            )
+        self.page.update()
+        
+
+    def ui_events(self, e):
+        if e.control.value == "bank":
+            self.loan_form.controls[3].disabled = True
+        else:
+            self.loan_form.controls[3].disabled = False
+        self.page.update()
+
     def draw(self, header):
         self.group1_value = ft.Ref[ft.RadioGroup]()
         self.group2_value = ft.Ref[ft.RadioGroup]()
@@ -726,7 +776,6 @@ class BorrowSection:
                     content=ft.Row([
                         ft.Radio(value="terciary", label="Terceros"),
                     ], spacing=20),
-                    on_change=lambda e: None,
                 ),
             ]),
 
@@ -740,7 +789,7 @@ class BorrowSection:
                         ft.Radio(value="liquidity", label="Liquidez"),
                         ft.Radio(value="bank", label="Crédito"),
                     ], spacing=20),
-                    on_change=lambda e: None,
+                    on_change=self.ui_events,
                 ),
             ]),
         ], spacing=0)
@@ -768,6 +817,7 @@ class BorrowSection:
             ),
             ft.TextField(
             hint_text="Porcentaje de interés (%)",
+            value=0,
             hint_style=ft.TextStyle(color=self.theme.text_secondary),
             text_style=ft.TextStyle(color=self.theme.text_primary),
             border=ft.InputBorder.NONE,
@@ -789,13 +839,13 @@ class BorrowSection:
 
         loan_controls = ft.Row([
             ft.TextButton("Agregar", on_click=lambda e: self.set_loan_database(e)),
-            ft.TextButton("Calcular", on_click=lambda e: None),
         ])
 
 
-        loan_list = ft.Column([], spacing=10, scroll=ft.ScrollMode.ADAPTIVE)
+        self.loan_list = ft.Column([], spacing=10, scroll=ft.ScrollMode.ADAPTIVE)
+        self.get_all_loans(self.loan_list)
 
-
+        #TODO: Set this content scrollable
         return ft.Column([
             header.create("Préstamos", return_page=True),
             loan_type_options,
@@ -803,8 +853,8 @@ class BorrowSection:
             self.loan_form,
             loan_controls,
             ft.Divider(height=1, color="#333333"),
-            loan_list,
-        ], spacing=15, scroll=ft.ScrollMode.ADAPTIVE)
+            self.loan_list,
+        ], spacing=15, scroll=ft.ScrollMode.ADAPTIVE, expand=True)
 
 class MainSection:
     def __init__(self, theme: Theme, page: ft.Page):

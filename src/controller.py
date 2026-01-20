@@ -13,6 +13,10 @@ class DatabaseController:
 
     def drop_tables(self):
         self.db.drop_tables()
+        
+    def init_seed(self):
+        self.db.set_balance(0.0)
+        self.db.set_liquid(0.0)
 
 class UserDataController:
     @staticmethod
@@ -309,6 +313,15 @@ class LoanController:
         except Exception as e:
             logging.error(f"Error during calculate interest {e}", exc_info=True)
             return 0.0
+
+    def controller_fetch_loans():
+        db = Database()
+        try:
+            loans = db.fetch_borrowings()
+            return loans
+        except Exception as e:
+            logging.error(f"Error during fetch loans: {e}", exc_info=True)
+            return []
 
     def set(name, amount, interest, _id, to, _from):
         db = Database()
