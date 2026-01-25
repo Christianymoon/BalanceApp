@@ -129,34 +129,42 @@ class BalanceController:
 
 class TransactionController:
     @staticmethod
-    def controller_set_transaction(name, category, price, is_income, account_id): 
-        """Transaction low both Balance and Liquidity"""
-        db = Database()       
+    def controller_set_transaction(data): 
+        if data["type"] == "credit":
+            PassiveController.controller_set_passive(
+                data["name"], 
+                data["category"], 
+                data["price"], 
+                False)
+            return
+
+        db = Database()
+
+        if data["type"] == "spent":
+            is_income = False
+        elif data["type"] == "income":
+            is_income = True
+
         created_at = datetime.now().astimezone().strftime("%d/%m/%Y %H:%M")
 
         try:
-            expense_percentage = float(price) / BalanceController.controller_fetch_balance() * 100
+            expense_percentage = float(data["price"]) / BalanceController.controller_fetch_balance() * 100
         except ZeroDivisionError:
             expense_percentage = 0.0
-        db.set_transaction(name, category, price, is_income, expense_percentage, created_at)
-        ActiveController.controller_update_active(account_id, price, is_income)
+        db.set_transaction(
+            data["name"], 
+            data["category"], 
+            data["price"], 
+            is_income, 
+            expense_percentage, 
+            created_at)
+    
+        ActiveController.controller_update_active(
+            data["account_id"], 
+            data["price"], 
+            is_income
+        )
 
-    @staticmethod
-    def delete_all(affect_amounts=True):
-        db = Database()
-        try: 
-            all_transactions = TransactionController.controller_fetch_transactions()
-            if affect_amounts:
-                income_amounts = [transaction[3] for transaction in all_transactions if transaction[4] == True]
-                not_income_amounts = [transaction[3] for transaction in all_transactions if transaction[4] == False]
-                BalanceController.controller_change_balance(sum(income_amounts), False)
-                BalanceController.controller_change_balance(sum(not_income_amounts), True)
-                LiquidController.change(sum(income_amounts), False)
-                LiquidController.change(sum(not_income_amounts), True)
-            db.delete_all_transactions()
-        except Exception as e:
-            logging.error(f"Error during deleting transactions {e}")
-        
     @staticmethod
     def controller_fetch_transactions():
         try:
@@ -321,6 +329,24 @@ class LoanController:
             return loans
         except Exception as e:
             logging.error(f"Error during fetch loans: {e}", exc_info=True)
+            return []
+
+    def liquidate(id, account_id):
+        db = Database()
+        try:
+            loan = LoanController.fetch(id)
+            ActiveController.controller_update_active(account_id, loan[3], True)
+            db.delete_borrowing(id)
+        except Exception as e:
+            logging.error(f"Error during liquidate loan: {e}", exc_info=True)
+
+
+    def fetch(id):
+        db = Database()
+        try:
+            return db.fetch_one_borrowing(id)
+        except Exception as e:
+            logging.error(f"Error during fetch loan: {e}", exc_info=True)
             return []
 
     def set(name, amount, interest, _id, to, _from):
