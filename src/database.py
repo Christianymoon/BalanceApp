@@ -1,4 +1,5 @@
 from db_connection import conn
+import os
 
 class Database:
 
@@ -62,16 +63,48 @@ class Database:
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+
+
+        cursor.execute("""CREATE TABLE IF NOT EXISTS borrowings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            amount REAL NOT NULL,
+            interest REAL NOT NULL,
+            total_paylable REAL NOT NULL,
+            parcial_payments REAL DEFAULT 0,
+            is_paid BOOLEAN DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )""")
         
         conn.commit()
         cursor.close()
-    
-    def set_transaction(self, name, category, price, is_income, expense_percentage):
+
+    def drop_tables(self):
+        cursor = conn.cursor()
+        cursor.execute("DROP TABLE IF EXISTS passive")
+        cursor.execute("DROP TABLE IF EXISTS active")
+        cursor.execute("DROP TABLE IF EXISTS transactions")
+        cursor.execute("DROP TABLE IF EXISTS balance")
+        cursor.execute("DROP TABLE IF EXISTS liquid")
+        cursor.execute("DROP TABLE IF EXISTS borrowings")
+        conn.commit()
+        cursor.close()
+
+    def set_borrowing(self, name, amount, interest, total_paylable):
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO transactions (name, category, price, is_income, expense_percentage)
-            VALUES (?, ?, ?, ?, ?)
-        """, (name, category, price, is_income, expense_percentage))
+            INSERT INTO borrowings (name, amount, interest, total_paylable)
+            VALUES (?, ?, ?, ?)
+        """, (name, amount, interest, total_paylable))
+        conn.commit()
+        cursor.close()
+    
+    def set_transaction(self, name, category, price, is_income, expense_percentage, created_at=None):
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO transactions (name, category, price, is_income, expense_percentage, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (name, category, price, is_income, expense_percentage, created_at))
         conn.commit()
         cursor.close()
 
@@ -84,7 +117,6 @@ class Database:
         conn.commit()
         cursor.close()
     
-
     def set_passive(self, name, category, price, is_liquidated):
         cursor = conn.cursor()
         cursor.execute("""
@@ -119,6 +151,20 @@ class Database:
             VALUES (?, ?)""", (username, gender))
         conn.commit()
         cursor.close()
+
+    def fetch_borrowings(self):
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM borrowings")
+        result = cursor.fetchall()
+        cursor.close()
+        return result
+    
+    def fetch_one_borrowing(self, id):
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM borrowings WHERE id = ?", (id,))
+        result = cursor.fetchone()
+        cursor.close()
+        return result
 
     def fetch_transactions(self):
         cursor = conn.cursor()
