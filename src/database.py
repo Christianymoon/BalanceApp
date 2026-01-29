@@ -67,6 +67,7 @@ class Database:
 
         cursor.execute("""CREATE TABLE IF NOT EXISTS borrowings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            active_id INTEGER,
             name TEXT,
             amount REAL NOT NULL,
             interest REAL NOT NULL,
@@ -90,14 +91,6 @@ class Database:
         conn.commit()
         cursor.close()
 
-    def set_borrowing(self, name, amount, interest, total_paylable):
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO borrowings (name, amount, interest, total_paylable)
-            VALUES (?, ?, ?, ?)
-        """, (name, amount, interest, total_paylable))
-        conn.commit()
-        cursor.close()
     
     def set_transaction(self, name, category, price, is_income, expense_percentage, created_at=None):
         cursor = conn.cursor()
@@ -117,12 +110,12 @@ class Database:
         conn.commit()
         cursor.close()
     
-    def set_passive(self, name, category, price, is_liquidated):
+    def set_passive(self, name, category, price, is_liquidated, created_at=None):
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO passive (name, category, price, is_liquidated)
-            VALUES (?, ?, ?, ?)
-        """, (name, category, price, is_liquidated))
+            INSERT INTO passive (name, category, price, is_liquidated, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        """, (name, category, price, is_liquidated, created_at))
         conn.commit()
         cursor.close()
 
@@ -133,7 +126,9 @@ class Database:
             VALUES (?, ?, ?, ?)
         """, (active_type, name, mount, is_liquid))
         conn.commit()
+        active_id = cursor.lastrowid
         cursor.close()
+        return active_id
 
     def set_liquid(self, amount):
         cursor = conn.cursor()
@@ -151,6 +146,16 @@ class Database:
             VALUES (?, ?)""", (username, gender))
         conn.commit()
         cursor.close()
+
+    def set_borrowing(self, active_id, name, amount, interest, total_paylable, created_at=None):
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO borrowings (active_id, name, amount, interest, total_paylable, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (active_id, name, amount, interest, total_paylable, created_at))
+        conn.commit()
+        cursor.close()
+    
 
     def fetch_borrowings(self):
         cursor = conn.cursor()
@@ -221,7 +226,15 @@ class Database:
         result = cursor.fetchone()
         cursor.close()
         return result
-    
+
+    def fetch_passive(self, id):
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM passive WHERE id = ?", (id,))
+        result = cursor.fetchone()
+        cursor.close()
+        return result
+
+ 
     def delete_all_transactions(self):
         cursor = conn.cursor()
         cursor.execute("DELETE FROM transactions")
@@ -240,6 +253,12 @@ class Database:
         conn.commit()
         cursor.close()
 
+    def delete_borrowing(self, id):
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM borrowings WHERE id = ?", (id,))
+        conn.commit()
+        cursor.close()
+ 
     def update_passive(self, id):
         cursor = conn.cursor()
         cursor.execute("""
@@ -282,11 +301,12 @@ class Database:
         conn.commit()
         cursor.close()
 
-
-
-    def search_passive(self, id):
+    def paid_loan(self, id):
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM passive WHERE id = ?", (id,))
-        result = cursor.fetchone()
+        cursor.execute("""
+            UPDATE borrowings
+            SET is_paid = 1
+            WHERE id = ?
+        """, (id,))
+        conn.commit()
         cursor.close()
-        return result

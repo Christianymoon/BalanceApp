@@ -51,25 +51,35 @@ class SearchController:
 
 class PassiveController:
     @staticmethod
-    def controller_set_passive(name, category, amount, is_liquidated):
+    def controller_set_passive(name, category, amount, is_liquidated=False):
         db = Database()
         try:
-            db.set_passive(name, category, amount, is_liquidated)
+            created_at = datetime.now().astimezone().strftime("%d/%m/%Y %H:%M")
+            db.set_passive(name, category, amount, is_liquidated, created_at)
         except Exception as e:
             logging.error(f"Error during setting passive: {e}", exc_info=True)
-        
-        if is_liquidated:
-            TransactionController.controller_set_transaction(name, category, amount, False)
-        else:
-            BalanceController.controller_change_balance(amount, False)
-            
-    def liquidate_passive(id):
+
+        BalanceController.controller_change_balance(amount, False)
+
+    @staticmethod
+    def fetch_passive(id):
         db = Database()
         try:
-            passive = db.search_passive(id)
+            passive = db.fetch_passive(id)
+            return passive
+        except Exception as e:
+            logging.error(f"Error during searching pasive on database: {e}")
+    
+    @staticmethod
+    def pay_passive(id, active_id):
+        db = Database()
+        try:
+            passive = PassiveController.fetch_passive(id)
+            active = ActiveController.controller_fetch_active(active_id)
             if passive and not passive[4]:
                 db.update_passive(id)
-                LiquidController.change(passive[3], False) # False to increase liquidity
+                db.update_active(active_id, active[3] - passive[3])
+                LiquidController.change(passive[3], False)
         except Exception as e:
             logging.error(f"Error during searching pasive on database: {e}")
         
@@ -138,12 +148,17 @@ class TransactionController:
                 False)
             return
 
+        if not TransactionController.validate_transaction(data) and data["type"] == "spent":
+            raise Exception("No hay saldo suficiente para realizar la transaccion")
+
         db = Database()
 
         if data["type"] == "spent":
             is_income = False
         elif data["type"] == "income":
             is_income = True
+
+        
 
         created_at = datetime.now().astimezone().strftime("%d/%m/%Y %H:%M")
 
@@ -164,6 +179,12 @@ class TransactionController:
             data["price"], 
             is_income
         )
+
+    def validate_transaction(data):
+        active = ActiveController.controller_fetch_active(data["account_id"])
+        if active[3] < float(data["price"]):
+            return False
+        return True
 
     @staticmethod
     def controller_fetch_transactions():
@@ -243,7 +264,7 @@ class ActiveController:
     def controller_set_active(name, active_type, amount, is_liquid):
         db = Database()
         try:
-            db.set_active(active_type, name, amount, is_liquid)
+            active_id = db.set_active(active_type, name, amount, is_liquid)
         except Exception as e:
             logging.error(f"Error during set active {e}")
 
@@ -252,6 +273,8 @@ class ActiveController:
             LiquidController.change(amount, True)
         else:
             BalanceController.controller_change_balance(amount, True)
+
+        return active_id
 
 
     @staticmethod
@@ -322,6 +345,13 @@ class LoanController:
             logging.error(f"Error during calculate interest {e}", exc_info=True)
             return 0.0
 
+    def paid(id):
+        db = Database()
+        try:
+            db.paid_loan(id)
+        except Exception as e:
+            logging.error(f"Error during set paid {e}", exc_info=True)
+
     def controller_fetch_loans():
         db = Database()
         try:
@@ -331,15 +361,22 @@ class LoanController:
             logging.error(f"Error during fetch loans: {e}", exc_info=True)
             return []
 
-    def liquidate(id, account_id):
+    def liquidate(id, active_id, account_id):
         db = Database()
         try:
-            loan = LoanController.fetch(id)
-            ActiveController.controller_update_active(account_id, loan[3], True)
-            db.delete_borrowing(id)
+            LoanController.paid(id)
+            amount = LoanController.fetch(id)[3]
+            ActiveController.controller_update_active(account_id, float(amount), True)
+            ActiveController.controller_delete_active(active_id)
         except Exception as e:
             logging.error(f"Error during liquidate loan: {e}", exc_info=True)
 
+    def delete(id):
+        db = Database()
+        try:
+            db.delete_borrowing(id)
+        except Exception as e:
+            logging.error(f"Error during delete loan: {e}", exc_info=True)
 
     def fetch(id):
         db = Database()
@@ -353,17 +390,19 @@ class LoanController:
         db = Database()
         if _from == "bank":
             PassiveController.controller_set_passive(name, "Prestamo", float(amount), False)
-            ActiveController.controller_set_active(name, "Prestamo", float(amount), False)
+            active_id = ActiveController.controller_set_active(name, "Prestamo", float(amount), False)
             total_payment = LoanController.calculate_interest(amount, interest) + float(amount)
-            db.set_borrowing(name, amount, interest, total_payment)
+            created_at = datetime.now().astimezone().strftime("%d/%m/%Y %H:%M")
+            db.set_borrowing(active_id, name, amount, interest, total_payment, created_at)
             return
         try:
             liquid_account = ActiveController.controller_fetch_active(_id)
             if liquid_account and liquid_account[4]:
                 ActiveController.controller_update_active(_id, float(amount), False) # Baja liquidez
-                ActiveController.controller_set_active(name, "Prestamo", float(amount), False) # Crea activo no liquido
+                active_id = ActiveController.controller_set_active(name, "Prestamo", float(amount), False) # Crea activo no liquido
                 total_payment = LoanController.calculate_interest(amount, interest) + float(amount)
-                db.set_borrowing(name, amount, interest, total_payment)
+                created_at = datetime.now().astimezone().strftime("%d/%m/%Y %H:%M")
+                db.set_borrowing(active_id, name, amount, interest, total_payment, created_at)
         except Exception as e:
             logging.error(f"Error during set loan {e}", exc_info=True)
 
