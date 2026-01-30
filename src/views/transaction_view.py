@@ -47,7 +47,11 @@ class TransactionSection:
 
     def draw(self, header):
         self.accounts_actives = ActiveController.controller_fetch_actives()
+
         self.radiogroup_ref = ft.Ref[ft.RadioGroup]()
+
+        self.header = header.create("Transacciones", return_page=True)
+
         self.add_transaction = ft.Container(
             bgcolor=self.theme.bg,
             padding=10,
@@ -57,9 +61,10 @@ class TransactionSection:
                 hint_text="Nombre",
                 hint_style=ft.TextStyle(color=self.theme.text_secondary),
                 text_style=ft.TextStyle(color=self.theme.text_primary),
-                border=ft.InputBorder.NONE,
+                border=ft.InputBorder.OUTLINE,
                 prefix_icon=icons.PERSON,
                 bgcolor=self.theme.fg,
+                border_radius=20,
                 filled=True,
             ),
             #Category 1
@@ -67,9 +72,10 @@ class TransactionSection:
                 hint_text="Categoria",
                 hint_style=ft.TextStyle(color=self.theme.text_secondary),
                 text_style=ft.TextStyle(color=self.theme.text_primary),
-                border=ft.InputBorder.NONE,
+                border=ft.InputBorder.OUTLINE,
                 prefix_icon=icons.FILTER,
                 bgcolor=self.theme.fg,
+                border_radius=20,
                 filled=True,
             ),
             #Mount 2
@@ -77,9 +83,10 @@ class TransactionSection:
                 hint_text="Monto",
                 hint_style=ft.TextStyle(color=self.theme.text_secondary),
                 text_style=ft.TextStyle(color=self.theme.text_primary),
-                border=ft.InputBorder.NONE,
+                border=ft.InputBorder.OUTLINE,
                 prefix_icon=icons.ATTACH_MONEY,
                 bgcolor=self.theme.fg,
+                border_radius=20,
                 filled=True,
                 keyboard_type=ft.KeyboardType.NUMBER,
                 input_filter=ft.InputFilter(
@@ -102,8 +109,9 @@ class TransactionSection:
                 options=[ft.dropdown.Option(text=f"{account[2]} ${account[3]}", key=account[0]) for account in self.accounts_actives if account[4]],
                 text_style=ft.TextStyle(color=self.theme.green_color),
                 bgcolor=self.theme.fg,
+                border_radius=20,
                 filled=True,
-                border=ft.InputBorder.NONE,
+                border=ft.InputBorder.OUTLINE,
             ),
             #Button 5
             ft.Row([
@@ -118,8 +126,13 @@ class TransactionSection:
             ]),
             ], expand=True)
         )
-        return ft.Column([
-            header.create("Transacciones", return_page=True),
-            self.add_transaction,
-        ], expand=True, spacing=0, scroll=ft.ScrollMode.AUTO)
+
+        return ft.Container(
+            ft.Column([
+                self.header,
+                self.add_transaction,
+            ]),
+            margin=ft.margin.symmetric(horizontal=20, vertical=10),
+            expand=True,
+        )
 

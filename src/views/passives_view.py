@@ -197,14 +197,15 @@ class PassiveItemView():
 
     def pay_passive(self, e):
         if self.account_dropdown.value:
-            PassiveController.pay_passive(self.current_passive[0], self.account_dropdown.value)
-            self.page.go("/passive")
+            try:
+                PassiveController.pay_passive(self.current_passive[0], self.account_dropdown.value)
+                self.page.go("/passive")
+            except Exception as e:
+                print(e)
+                Dialogs.error_dialog(self.page, str(e))
+                self.page.update()
         else:
-            self.page.snack_bar = ft.SnackBar(
-                ft.Text("Selecciona una cuenta"),
-                open=True
-            )
-        
+            Dialogs.lost_data_dialog(self.page)
         self.page.update()
 
     def delete_passive(self, e):

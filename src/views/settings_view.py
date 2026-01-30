@@ -5,6 +5,11 @@ from controllers.controller import (
 from themes.themes import Theme
 from flet import Icons as icons
 import flet as ft
+import os
+import shutil
+import logging
+
+from setup import log_dir
 
 
 class Settings:
@@ -31,7 +36,6 @@ class Settings:
 
         self.page.update()
 
-
     def draw(self, header):
 
         self.header = header.create("Configuracion", return_page=True)
@@ -52,7 +56,7 @@ class Settings:
         self.space = ft.Container(ft.Column(), expand=True)
 
         self.reset_button = ft.Container(
-            content=ft.Text("Reiniciar Base de Datos", color=self.theme.bg, size=16, weight=ft.FontWeight.BOLD),
+            content=ft.Text("Reestablecer Base de Datos", color=self.theme.bg, size=16, weight=ft.FontWeight.BOLD),
             bgcolor=self.theme.red_color,
             padding=15,
             border_radius=20,

@@ -3,6 +3,8 @@ from controllers.controller import (
     ActiveController,
 )
 
+from components.dialogs import Dialogs
+
 from themes.themes import Theme
 from flet import Icons as icons
 import flet as ft
@@ -47,14 +49,20 @@ class BorrowSection:
         loan_data = self.get_loan_data(e)
         if not loan_data:
             return
-        LoanController.set(
-            loan_data["name"],
-            loan_data["amount"],
-            loan_data["interest"],
-            loan_data["source_account"],
-            loan_data["to"],
-            loan_data["from"],
-        )
+
+        try:
+            LoanController.set(
+                loan_data["name"],
+                loan_data["amount"],
+                loan_data["interest"],
+                loan_data["source_account"],
+                loan_data["to"],
+                loan_data["from"],
+            )
+        except Exception as e:
+            Dialogs.error_dialog(self.page, str(e))
+            return
+
         self.page.go("/")
 
     def draw_loans(self, list_control):

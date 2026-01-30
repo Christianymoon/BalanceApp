@@ -1,14 +1,13 @@
 [project]
-name = "financeapp"
-version = "0.1.0"
-description = ""
+name = "balance"
+version = "1.0.0"
+description = "Beta Version"
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [
     { name = "Christian Vergara", email = "imchrisyt15@gmail.com" }
 ]
 
-#TODO DELETE REQUESTS DEPENDENCY
 dependencies = [
   "flet==0.28.3",
 ]
@@ -26,7 +25,7 @@ product = "Balance"
 company = "Christianymoon Ltd."
 
 # copyright text to display in about app dialogs
-copyright = "Copyright (C) 2025 by Flet"
+copyright = "Copyright (C) 2025 by Balance"
 
 [tool.flet.app]
 path = "src"

@@ -5,10 +5,12 @@ from controllers.controller import (
     BalanceController,
     SearchController
 )
+from setup import log_dir, FLET_APP_STORAGE_DATA
 
 import flet as ft
 from flet import Icons as icons
 import os
+
 
 class MainSection:
     def __init__(self, theme: Theme, page):
@@ -61,14 +63,20 @@ class MainSection:
 
     def on_search(self, e):
         if e.control.value == "log":
-            log_file = open(os.path.join(log_dir), "r")
-            logs = log_file.read()
-            log_file.close()
-            logs_ = ft.Text(logs, color=self.theme.text_primary,
-                            size=12, expand=True)
-            self.stock_list.controls.clear()
-            self.stock_list.controls.append(logs_)
-            self.page.update()
+            try:
+                log_file = open(log_dir, "r")
+                logs = log_file.read()
+                log_file.close()
+                logs_ = ft.Text(logs, color=self.theme.text_primary,
+                                size=12, expand=True)
+                self.stock_list.controls.clear()
+                self.stock_list.controls.append(logs_)
+                self.page.update()
+            except Exception as e:
+                error = ft.Text(f"Error al cargar logs: {e}, estado de FLET_APP_STORAGE_DATA: {FLET_APP_STORAGE_DATA}", color=self.theme.red_color)
+                self.stock_list.controls.clear()
+                self.stock_list.controls.append(error)
+                self.page.update()
             return
 
 

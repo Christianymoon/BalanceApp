@@ -2,6 +2,8 @@ from controllers.controller import (
     LoanController,
     ActiveController
 )
+
+from components.dialogs import Dialogs
 from flet import Icons as icons
 import flet as ft
 from themes.themes import Theme
@@ -26,11 +28,18 @@ class LoanView:
 
     def liquidate(self, e):
         if not self.account_dropdown.value:
+            Dialogs.error_dialog(self.page, "Selecciona una cuenta")
             return
-
+        
         account_id = self.account_dropdown.value
-        LoanController.liquidate(self.data["loan_id"], self.current_loan[1], account_id)
-        self.page.go("/")
+
+        try:
+            LoanController.liquidate(self.data["loan_id"], self.current_loan[1], account_id)
+            self.page.go("/")
+        except Exception as e:
+            Dialogs.error_dialog(self.page, str(e))
+        
+        self.page.update()
 
     def draw(self, header):
         self.fetch_loan()

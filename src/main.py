@@ -6,6 +6,7 @@ from controllers.controller import UserDataController
 
 from themes.themes import Theme
 from router import navigate_to
+
 import logging
 
 

@@ -8,11 +8,12 @@ class HeaderSection:
         self.theme = theme
         self.page = page
         self.header = None
+        self.page.overlay.clear()
         self.file_picker = ft.FilePicker(
             on_result=self.change_background,
 
         )
-        self.page.overlay.append(self.file_picker)
+        
 
     def change_background(self, e):
         if e.files:
@@ -40,6 +41,7 @@ class HeaderSection:
 
         if not return_page:
             # CREATE PROFILE PICTURE
+            self.page.overlay.append(self.file_picker)
             self.header.content.controls.insert(0,
                 ft.Container(content=ft.Image("./assets/avatar/profile.png", fit=ft.ImageFit.COVER, width=45, height=45),
                             width=45,
@@ -53,7 +55,6 @@ class HeaderSection:
             # CHANGE PIC IF USER PICK IMAGE
             if self.page.client_storage.contains_key("christianymoon.finance.profile_pic"):
                 self.header.content.controls[0].content.src = self.page.client_storage.get("christianymoon.finance.profile_pic")
-                self.page.update()
 
             self.header.padding = ft.padding.symmetric(horizontal=20, vertical=10)
             self.userdata = UserDataController.controller_fetch_userdata()
