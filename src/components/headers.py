@@ -7,70 +7,93 @@ class HeaderSection:
     def __init__(self, theme: Theme, page: ft.Page):
         self.theme = theme
         self.page = page
-        self.header = None
+        self.page.overlay.clear()
         self.file_picker = ft.FilePicker(
-            on_result=self.change_background,
+            on_result=self.change_profile_pic,
 
         )
-        self.page.overlay.append(self.file_picker)
 
-    def change_background(self, e):
+        
+        
+    def change_profile_pic(self, e):
         if e.files:
             file = e.files[0]
             img_path = file.path
             self.page.client_storage.remove("christianymoon.finance.profile_pic")
             self.page.client_storage.set("christianymoon.finance.profile_pic", img_path)
-            self.header.content.controls[0].content.src = self.page.client_storage.get("christianymoon.finance.profile_pic")
+            self.profile_image.src = self.page.client_storage.get("christianymoon.finance.profile_pic")
             self.page.update()
 
     def create(self, placeholder="Bienvenido de nuevo", return_page=True, config=False):
-        self.header = ft.Container(
-            content=ft.Row([
-                ft.Text(placeholder, color=self.theme.text_primary,size=18, weight=ft.FontWeight.W_500, expand=True),
-                # ft.Container(width=40, border=ft.border.all(1, "purple"),),
-            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-            margin=ft.margin.only(top=25),
-            padding=ft.padding.symmetric(vertical=10),
-            bgcolor=self.theme.bg
+
+        self.userdata = UserDataController.controller_fetch_userdata()
+
+        self.header_container = ft.Row(
+            expand=True, 
         )
 
-        
-        if config:
-            self.header.content.controls.append(ft.IconButton(icons.SETTINGS, icon_color=self.theme.text_secondary, icon_size=20, on_click=lambda e: self.page.go("/settings")))
+        self.retrun_button = ft.IconButton(
+            icons.ARROW_BACK_IOS, 
+            icon_color=self.theme.text_secondary, 
+            icon_size=20, 
+            on_click=lambda e: self.page.go("/"),
+            expand=True,
+            bgcolor=self.theme.fg,
+        )
 
-        if not return_page:
-            # CREATE PROFILE PICTURE
-            self.header.content.controls.insert(0,
-                ft.Container(content=ft.Image("./assets/avatar/profile.png", fit=ft.ImageFit.COVER, width=45, height=45),
-                            width=45,
-                            height=45,
-                            # border=ft.border.all(1, "purple"),
-                            # padding=4,
-                            border_radius=ft.border_radius.all(40),
-                            on_click=self.file_picker.pick_files)
-                )
-            
-            # CHANGE PIC IF USER PICK IMAGE
-            if self.page.client_storage.contains_key("christianymoon.finance.profile_pic"):
-                self.header.content.controls[0].content.src = self.page.client_storage.get("christianymoon.finance.profile_pic")
-                self.page.update()
+        self.placeholder = ft.Text(
+            placeholder, 
+            color=self.theme.text_primary,
+            size=18, 
+            weight=ft.FontWeight.W_500, 
+            expand=True,
+        )
 
-            self.header.padding = ft.padding.symmetric(horizontal=20, vertical=10)
-            self.userdata = UserDataController.controller_fetch_userdata()
-            if self.userdata[2] == "Femenino":
-                self.header.content.controls[1].value = f"Bienvenida de nuevo, {self.userdata[1]}!"
-            elif self.userdata[2] == "Masculino":
-                self.header.content.controls[1].value = f"Bienvenido de nuevo, {self.userdata[1]}!"
+        self.placeholder_container = ft.Container(
+            content=self.placeholder,
+            expand=True, 
+            alignment=ft.alignment.center,
+        )
+
+        self.return_button_container = ft.Container(
+            content=self.retrun_button,
+        )
+
+        self.settings_button = ft.IconButton(icons.SETTINGS, icon_color=self.theme.text_secondary, icon_size=20, on_click=lambda e: self.page.go("/settings"))
+
+        self.profile_image = ft.Image("./assets/avatar/profile.png", fit=ft.ImageFit.COVER, width=45, height=45)
+
+        self.profile_container = ft.Container(
+            content=self.profile_image,
+            width=45,
+            height=45,
+            border_radius=ft.border_radius.all(40),
+            on_click=self.file_picker.pick_files)
+
+        self.header_container.controls.append(self.placeholder_container)
 
         if return_page:
-            self.header.content.controls.insert(0,
-                                           ft.IconButton(
-                                               icon=icons.ARROW_BACK_IOS,
-                                               icon_color=self.theme.text_primary,
-                                               icon_size=20,
-                                               on_click=lambda e: self.page.go(
-                                                   "/")
-                                           )
-                                           )
+            self.header_container.controls.insert(0, self.return_button_container)
+        else:
+            self.page.overlay.append(self.file_picker)
+            if self.page.client_storage.get("christianymoon.finance.profile_pic"):
+                self.profile_image.src = self.page.client_storage.get("christianymoon.finance.profile_pic")
+            else:
+                self.profile_image.src = "./assets/avatar/profile.png"
+            
+            if self.userdata[2] == "Femenino":
+                self.placeholder.value = f"Bienvenida de nuevo, {self.userdata[1]}!"
+            elif self.userdata[2] == "Masculino":
+                self.placeholder.value = f"Bienvenido de nuevo, {self.userdata[1]}!"
+            
+            self.header_container.controls.insert(0, self.profile_container)
 
-        return self.header
+        if config:
+            self.header_container.controls.append(self.settings_button)
+
+        return ft.Container(
+            self.header_container,
+            bgcolor=self.theme.bg,
+            padding=ft.padding.symmetric(horizontal=20),
+            margin=ft.margin.only(top=20),
+        )

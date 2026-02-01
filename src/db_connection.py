@@ -9,10 +9,6 @@ try:
         FLET_APP_STORAGE_DATA = os.path.join(os.path.expanduser("~"), ".flet", "temp_storage")
     conn = sqlite3.connect(os.path.join(FLET_APP_STORAGE_DATA, "financeapp.db"), check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL;")
-    conn.execute("PRAGMA foreign_keys=ON;")
     logging.info(f"Database connection created at {FLET_APP_STORAGE_DATA}")
 except Exception as e:
-    conn = sqlite3.connect(os.path.join("./", "financeapp.db"), check_same_thread=False)
-    conn.execute("PRAGMA journal_mode=WAL;")
-    conn.execute("PRAGMA foreign_keys=ON;")
-    logging.info(f"Database connection created at {os.path.join("./", "financeapp.db")}")
+    logging.error(f"Error connecting to database: {e}")

@@ -56,6 +56,7 @@ class PassiveController:
         try:
             created_at = datetime.now().astimezone().strftime("%d/%m/%Y %H:%M")
             db.set_passive(name, category, amount, is_liquidated, created_at)
+            TransactionController.register_transaction(name, category, amount, False, created_at)
         except Exception as e:
             logging.error(f"Error during setting passive: {e}", exc_info=True)
 
@@ -76,12 +77,15 @@ class PassiveController:
         try:
             passive = PassiveController.fetch_passive(id)
             active = ActiveController.controller_fetch_active(active_id)
+            if active[3] < passive[3]:
+                raise ValueError("No tienes saldo suficiente para pagar este pasivo")
             if passive and not passive[4]:
                 db.update_passive(id)
                 db.update_active(active_id, active[3] - passive[3])
                 LiquidController.change(passive[3], False)
         except Exception as e:
-            logging.error(f"Error during searching pasive on database: {e}")
+            logging.error(f"Error during paying passive: {e}", exc_info=True)
+            raise e
         
     @staticmethod
     def controller_fetch_passives():
@@ -179,6 +183,20 @@ class TransactionController:
             data["price"], 
             is_income
         )
+
+    def register_transaction(name, category, price, is_income, created_at):
+        db = Database()
+        try:
+            expense_percentage = float(price) / BalanceController.controller_fetch_balance() * 100
+        except ZeroDivisionError:
+            expense_percentage = 0.0
+        db.set_transaction(
+            name, 
+            category, 
+            price, 
+            is_income, 
+            expense_percentage, 
+            created_at)
 
     def validate_transaction(data):
         active = ActiveController.controller_fetch_active(data["account_id"])
@@ -351,6 +369,7 @@ class LoanController:
             db.paid_loan(id)
         except Exception as e:
             logging.error(f"Error during set paid {e}", exc_info=True)
+            raise e
 
     def controller_fetch_loans():
         db = Database()
@@ -361,15 +380,16 @@ class LoanController:
             logging.error(f"Error during fetch loans: {e}", exc_info=True)
             return []
 
-    def liquidate(id, active_id, account_id):
+    def liquidate(id, loan_active_id, pay_account_id):
         db = Database()
         try:
+            loan = LoanController.fetch(id)
             LoanController.paid(id)
-            amount = LoanController.fetch(id)[3]
-            ActiveController.controller_update_active(account_id, float(amount), True)
-            ActiveController.controller_delete_active(active_id)
+            ActiveController.controller_update_active(pay_account_id, float(loan[3]), True)
+            ActiveController.controller_delete_active(loan_active_id)
         except Exception as e:
             logging.error(f"Error during liquidate loan: {e}", exc_info=True)
+            raise e
 
     def delete(id):
         db = Database()
@@ -396,8 +416,11 @@ class LoanController:
             db.set_borrowing(active_id, name, amount, interest, total_payment, created_at)
             return
         try:
-            liquid_account = ActiveController.controller_fetch_active(_id)
-            if liquid_account and liquid_account[4]:
+            account = ActiveController.controller_fetch_active(_id)
+            if account[3] < float(amount):
+                raise Exception("No hay suficiente saldo en la cuenta")
+
+            if account and account[4]:
                 ActiveController.controller_update_active(_id, float(amount), False) # Baja liquidez
                 active_id = ActiveController.controller_set_active(name, "Prestamo", float(amount), False) # Crea activo no liquido
                 total_payment = LoanController.calculate_interest(amount, interest) + float(amount)
@@ -405,6 +428,7 @@ class LoanController:
                 db.set_borrowing(active_id, name, amount, interest, total_payment, created_at)
         except Exception as e:
             logging.error(f"Error during set loan {e}", exc_info=True)
+            raise e
 
 
 if __name__ == "__main__":

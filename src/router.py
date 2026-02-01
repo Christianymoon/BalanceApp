@@ -35,14 +35,27 @@ def navigate_to(page: ft.Page, theme: Theme, route: str):
     header = HeaderSection(theme, page)
     view = views[route](theme, page)
 
-    page.views.clear()
-    page.views.append(
-        ft.View(
-            route=route,
-            controls=[
-                view.draw(header)
-            ],
-            bgcolor=theme.bg
+    try:
+        page.views.clear()
+        page.views.append(
+            ft.View(
+                route=route,
+                controls=[
+                    view.draw(header)
+                ],
+                bgcolor=theme.bg
+            )
         )
-    )
-    page.update()
+        page.update()
+    except Exception as e:
+        page.views.clear()
+        page.views.append(
+            ft.View(
+                route="/err",
+                controls=[
+                    ft.Text("Error :( {}".format(e), size=24, weight=ft.FontWeight.BOLD, color=theme.text_primary),
+                ],
+                bgcolor=theme.bg
+            )
+        )
+        page.update()
