@@ -53,7 +53,7 @@ def navigate_to(page: ft.Page, theme: Theme, route: str):
             ft.View(
                 route="/err",
                 controls=[
-                    ft.Text("Error :(", size=24, weight=ft.FontWeight.BOLD, color=theme.text_primary),
+                    ft.Text("Error :( {}".format(e), size=24, weight=ft.FontWeight.BOLD, color=theme.text_primary),
                 ],
                 bgcolor=theme.bg
             )
