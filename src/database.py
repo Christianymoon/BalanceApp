@@ -76,6 +76,16 @@ class Database:
             is_paid BOOLEAN DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )""")
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS intertransactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_name TEXT NOT NULL,
+            source_dest TEXT NOT NULL,
+            total REAL NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
         
         conn.commit()
         cursor.close()
@@ -88,8 +98,20 @@ class Database:
         cursor.execute("DROP TABLE IF EXISTS balance")
         cursor.execute("DROP TABLE IF EXISTS liquid")
         cursor.execute("DROP TABLE IF EXISTS borrowings")
+        cursor.execute("DROP TABLE IF EXISTS intertransactions")
         conn.commit()
         cursor.close()
+
+    def set_intertransaction(self, source_name, source_dest, total, created_at=None):
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO intertransactions (source_name, source_dest, total, created_at)
+            VALUES (?, ?, ?, ?)
+        """, (source_name, source_dest, total, created_at))
+        conn.commit()
+        cursor.close()
+
+    
 
     
     def set_transaction(self, name, category, price, is_income, expense_percentage, created_at=None):
@@ -231,6 +253,13 @@ class Database:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM passive WHERE id = ?", (id,))
         result = cursor.fetchone()
+        cursor.close()
+        return result
+
+    def fetch_intertransactions(self):
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM intertransactions")
+        result = cursor.fetchall()
         cursor.close()
         return result
 

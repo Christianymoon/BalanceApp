@@ -174,7 +174,14 @@ class ActiveSection:
                     tooltip="Seleccionar",
                     on_click=self.show_checkboxes,
                     icon_size=24,
-                )
+                ),
+                ft.IconButton(
+                    icon=icons.SYNC_ALT,
+                    icon_color=self.theme.text_primary,
+                    tooltip="Intertransferencia",
+                    on_click=lambda e: self.page.go("/intertransfer"),
+                    icon_size=24,
+                ),
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
 
         self.active_list = ft.Column(
