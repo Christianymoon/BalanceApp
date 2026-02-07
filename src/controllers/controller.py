@@ -345,8 +345,8 @@ class ActiveController:
             created_at = datetime.now().astimezone().strftime("%d/%m/%Y %H:%M")
             if source[3] < float(mount):
                 raise ValueError("No tienes saldo suficiente para realizar la transferencia")
-            db.update_active(source_id, float(source[3]) - float(mount))
-            db.update_active(target_id, float(target[3]) + float(mount))
+            ActiveController.controller_update_active(source_id, mount, False)
+            ActiveController.controller_update_active(target_id, mount, True)
             db.set_intertransaction(source[2], target[2], float(mount), created_at)
         except Exception as e:
             logging.error(f"Error during intertransfer: {e}", exc_info=True)
