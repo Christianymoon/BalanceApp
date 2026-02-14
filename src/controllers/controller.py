@@ -335,6 +335,32 @@ class ActiveController:
                 db.update_active(id, float(active[3]) - float(mount))
         except Exception as e:
             logging.error(f"Error during update active: {e}", exc_info=True)
+
+    @staticmethod
+    def controller_intertransfer(source_id, target_id, mount):
+        db = Database()
+        try:
+            source = ActiveController.controller_fetch_active(source_id)
+            target = ActiveController.controller_fetch_active(target_id)
+            created_at = datetime.now().astimezone().strftime("%d/%m/%Y %H:%M")
+            if source[3] < float(mount):
+                raise ValueError("No tienes saldo suficiente para realizar la transferencia")
+            ActiveController.controller_update_active(source_id, mount, False)
+            ActiveController.controller_update_active(target_id, mount, True)
+            db.set_intertransaction(source[2], target[2], float(mount), created_at)
+        except Exception as e:
+            logging.error(f"Error during intertransfer: {e}", exc_info=True)
+            raise e
+
+    @staticmethod
+    def controller_fetch_intertransactions():
+        db = Database()
+        try:
+            intertransactions = db.fetch_intertransactions()
+            return intertransactions
+        except Exception as e:
+            logging.error(f"Error during fetch intertransactions: {e}")
+            return []
     
     @staticmethod
     def controller_delete_active(id):

@@ -10,9 +10,12 @@ from views.loan_view import LoanView
 from views.settings_view import Settings
 from views.error_view import ErrorPage
 from views.setup_view import Setup
+from views.intertransfer_view import IntertransferView
 
 from components.headers import HeaderSection
 from themes.themes import Theme
+
+import logging
 
 
 views = {
@@ -27,6 +30,7 @@ views = {
     "/settings" : Settings,
     "/error" : ErrorPage,
     "/setup" : Setup,
+    "/intertransfer" : IntertransferView,
 }
 
 
@@ -48,6 +52,7 @@ def navigate_to(page: ft.Page, theme: Theme, route: str):
         )
         page.update()
     except Exception as e:
+        logging.error(e)
         page.views.clear()
         page.views.append(
             ft.View(
