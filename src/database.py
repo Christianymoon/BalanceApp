@@ -195,7 +195,7 @@ class Database:
 
     def fetch_transactions(self):
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM transactions")
+        cursor.execute("SELECT * FROM transactions LIMIT 25")
         result = cursor.fetchall()
         cursor.close()
         return result
