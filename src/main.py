@@ -24,8 +24,8 @@ class FinanceApp:
         self.page.theme_mode = ft.ThemeMode.DARK
         self.page.bgcolor = self.theme.bg
         self.page.on_route_change = self.route_change
-        #TODO: BORRA ESTO NO SIRVE
-        self.page.on_view_pop = self.view_pop  # Maneja el botón de regreso de Android
+
+        self.page.on_view_pop = self.handle_pop_views 
         self.page.run_thread(self._on_mount)
 
     def _on_mount(self):
@@ -49,29 +49,11 @@ class FinanceApp:
             self.route_history.append(route.route)
         navigate_to(self.page, self.theme, route.route)
     
-    #TODO: BORRA ESTO NO SIRVE
-    def view_pop(self, view):
-        """
-        Maneja el evento cuando se presiona el botón de regreso en Android
-        o se usa el gesto de regreso
-        """
-        # Si hay más de una vista en el historial, navegar a la anterior
-        if len(self.route_history) > 1:
-            # Remover la ruta actual
-            self.route_history.pop()
-            # Obtener la ruta anterior
-            previous_route = self.route_history[-1]
-            # Remover la ruta anterior del historial porque route_change la agregará de nuevo
-            self.route_history.pop()
-            # Navegar a la ruta anterior
-            self.page.go(previous_route)
-        elif self.page.route == "/":
-            # Si estamos en la página principal, cerrar la app
-            self.page.window_destroy()
-        else:
-            # Si no hay historial, ir a la página principal
-            self.route_history.clear()
-            self.page.go("/")
+    def handle_pop_views(self):
+        self.page.views.pop()
+        top_view = self.page.views[-1]
+        self.page.go(top_view)
+
 
 def main(page: ft.Page):
     FinanceApp(page)

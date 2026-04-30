@@ -43,9 +43,14 @@ class PassiveSection:
             name, category, price)
         self.refresh_passives()
 
+    def get_total_sum(self):
+        passives = PassiveController.controller_fetch_passives()
+        return sum(item[3] for item in passives if item[4] == 0)
+
     def refresh_passives(self, *args):
         self.passive_list.controls.clear()
         self.add_passive_list(PassiveController.controller_fetch_passives())
+        self.total_sum.content.controls[0].value = f"Adeudo total ${self.get_total_sum():.2f} MXN"
         self.page.update()
 
     def add_passive_list(self, passives_list):
@@ -155,15 +160,14 @@ class PassiveSection:
                             size=14, weight=ft.FontWeight.W_500)
                 ])
 
-        self.controls = ft.Row([
-                ft.IconButton(
-                    icon=icons.REFRESH,
-                    icon_color=self.theme.text_primary,
-                    tooltip="Refrescar Lista",
-                    on_click=self.refresh_passives,
-                    icon_size=24,
+        self.total_sum = ft.Container(
+            ft.Row([
+                ft.Text(
+                    f"Adeudo total ${self.get_total_sum():.2f} MXN",
+                    color=self.theme.red_color,
                 )
-            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+            ])
+        )
 
         self.passive_list = ft.Column([], spacing=0, scroll=ft.ScrollMode.AUTO,
             expand=True)
@@ -177,7 +181,7 @@ class PassiveSection:
                 self.category_field,
                 self.mount_field,
                 self.panel,
-                self.controls,
+                self.total_sum,
                 self.passive_list
             ]),
             margin=ft.margin.symmetric(horizontal=20, vertical=10),
