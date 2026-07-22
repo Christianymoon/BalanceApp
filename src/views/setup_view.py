@@ -1,12 +1,12 @@
-import flet as ft 
+import flet as ft
 from flet import Icons as icons
 
-from themes.themes import Theme 
+from themes.themes import Theme
 from controllers.controller import (
     UserDataController,
     DatabaseController
 )
-
+from components.dialogs import Dialogs
 import logging
 
 
@@ -19,10 +19,11 @@ class Setup:
         db_instance = DatabaseController()
         db_instance.init_seed()
         logging.info("Setting up mode in out in False")
-        self.page.client_storage.set("christianymoon.finance.in_out_mode_setting", False)
+        self.page.client_storage.set(
+            "christianymoon.finance.in_out_mode_setting", False)
         logging.info("Setting up portfolio mode in False")
-        self.page.client_storage.set("christianymoon.finance.portfolio_mode", False)
-        
+        self.page.client_storage.set(
+            "christianymoon.finance.portfolio_mode", False)
 
     def save_userdata(self, e):
         name = self.name_input.value
@@ -33,12 +34,12 @@ class Setup:
         self.page.go("/")
 
     def draw(self, header):
-        
+
         self.text_title = ft.Text("Configuración Inicial", color=self.theme.text_primary,
-                    size=24, weight=ft.FontWeight.BOLD)
+                                  size=24, weight=ft.FontWeight.BOLD)
 
         self.text_subtitle = ft.Text("Parece que es la primera vez que usas la aplicación. Por favor ingresa tu nombre y género para continuar.",
-                    color=self.theme.text_secondary, size=14)
+                                     color=self.theme.text_secondary, size=14)
 
         self.name_input = ft.TextField(
             hint_text="Nombre",
@@ -65,7 +66,7 @@ class Setup:
         )
 
         self.save_button = ft.ElevatedButton("Guardar", bgcolor=self.theme.green_color,
-                              color="#000000", on_click=self.save_userdata)
+                                             color="#000000", on_click=self.save_userdata)
 
         return ft.Container(
             ft.Column([

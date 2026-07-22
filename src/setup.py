@@ -1,4 +1,4 @@
-from config import FLET_APP_STORAGE_DATA
+from core.config import FLET_APP_STORAGE_DATA
 
 import logging
 import os

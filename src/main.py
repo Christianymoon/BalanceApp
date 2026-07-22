@@ -3,19 +3,33 @@ from flet import Icons as icons
 from setup import log_dir
 from controllers.controller import DatabaseController
 from controllers.controller import UserDataController
+from controllers.controller import BalanceController
+# from components.notification_manager import NotificationManager
 
-from themes.themes import Theme
+from client.client import ClientStorage
+from themes.themes import LigthMode, DarkMode
 from router import navigate_to
 
+from core.config import ASSETS_DIR
 import logging
 
 
 class FinanceApp:
     def __init__(self, page: ft.Page):
         self.page = page
-        self.theme = Theme()
+        # self.notification_manager = NotificationManager()
+        self.client = ClientStorage(self.page)
+        dark_mode = self.client.get_value("dark_mode")
+        if dark_mode is None:
+            dark_mode = True
+            self.client.set_value("dark_mode", True)
+
+        if dark_mode:
+            self.theme = DarkMode()
+        else:
+            self.theme = LigthMode()
         self.route_history = []  # Historial de rutas para navegación
-        
+
         self.page.fonts = {
             "SF-Pro": "/fonts/SF-Pro.ttf",
         }
@@ -24,14 +38,13 @@ class FinanceApp:
         self.page.theme_mode = ft.ThemeMode.DARK
         self.page.bgcolor = self.theme.bg
         self.page.on_route_change = self.route_change
-
-        self.page.on_view_pop = self.handle_pop_views 
         self.page.run_thread(self._on_mount)
 
     def _on_mount(self):
         try:
             db = DatabaseController()
             db.create_tables()
+            BalanceController.make_snapshot()
             logging.info("Application mounted successfully.")
             logging.info(f"Setup database")
             if UserDataController.controller_fetch_userdata() is None:
@@ -44,19 +57,14 @@ class FinanceApp:
             self.page.go("/error")
 
     def route_change(self, route):
-        # Agregar la ruta actual al historial si no es la misma que la última
         if len(self.route_history) == 0 or self.route_history[-1] != route.route:
             self.route_history.append(route.route)
         navigate_to(self.page, self.theme, route.route)
-    
-    def handle_pop_views(self):
-        self.page.views.pop()
-        top_view = self.page.views[-1]
-        self.page.go(top_view)
 
 
 def main(page: ft.Page):
     FinanceApp(page)
 
+
 if __name__ == "__main__":
-    ft.app(target=main, assets_dir="assets")
+    ft.app(target=main, assets_dir=ASSETS_DIR)

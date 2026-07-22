@@ -1,10 +1,11 @@
 from controllers.controller import (
     PassiveController,
     ActiveController,
+    CategoriesController,
 )
 
-from components.headers import HeaderSection
 from components.dialogs import Dialogs
+from controllers.date_groups import get_group_date, create_month_separator
 
 from themes.themes import Theme
 from flet import Icons as icons
@@ -19,6 +20,15 @@ class PassiveSection:
         self.new_passive = None
         self.passive_list = None
         self.accounts_actives = ActiveController.controller_fetch_actives()
+        self.category_controller = CategoriesController()
+        self.previous_date = None
+
+    def calculate_month(self, date: str, timelapse: str = None):
+        year, month = get_group_date(date, timelapse)
+        if month != self.previous_date:
+            self.previous_date = month
+            self.passive_list.controls.append(
+                create_month_separator(month, year, self.theme))
 
     def handle_item_view(self, e):
         try:
@@ -38,7 +48,6 @@ class PassiveSection:
         if price == "" or name == "" or category == "":
             return Dialogs.lost_data_dialog(self.page)
 
-        
         PassiveController.controller_set_passive(
             name, category, price)
         self.refresh_passives()
@@ -55,7 +64,14 @@ class PassiveSection:
 
     def add_passive_list(self, passives_list):
         self.passive_list.controls.clear()
-        for item in reversed(passives_list):
+        for item in passives_list:
+            self.calculate_month(
+                date=item[5], timelapse="month")
+            if isinstance(item[2], int) or item[2].isdigit():
+                category = self.category_controller.fetch_category(int(item[2]))[
+                    1]
+            else:
+                category = item[2]
             if item[4]:
                 trend_icon = icons.CHECK_CIRCLE
                 trend_color = self.theme.green_color
@@ -78,7 +94,7 @@ class PassiveSection:
                             ft.Text(item[1], color=self.theme.text_primary,
                                     size=14, weight=ft.FontWeight.W_500),
                             ft.Text(
-                                item[2], color=self.theme.text_secondary, size=12)
+                                category, color=self.theme.text_secondary, size=12)
                         ], spacing=2, expand=True),
                         ft.Container(
                             content=ft.Icon(
@@ -122,55 +138,60 @@ class PassiveSection:
             bgcolor=self.theme.fg,
             filled=True,
             border_radius=20,
-            )
+        )
 
         self.category_field = ft.TextField(
-                    hint_text="Categoria",
-                    hint_style=ft.TextStyle(color=self.theme.text_secondary),
-                    text_style=ft.TextStyle(color=self.theme.text_primary),
-                    border=ft.InputBorder.OUTLINE,
-                    prefix_icon=icons.FILTER,
-                    bgcolor=self.theme.fg,
-                    filled=True,
-                    border_radius=20,
-                )
+            hint_text="Categoria",
+            hint_style=ft.TextStyle(color=self.theme.text_secondary),
+            text_style=ft.TextStyle(color=self.theme.text_primary),
+            border=ft.InputBorder.OUTLINE,
+            prefix_icon=icons.FILTER,
+            bgcolor=self.theme.fg,
+            filled=True,
+            border_radius=20,
+        )
 
         self.mount_field = ft.TextField(
-                    hint_text="Monto",
-                    hint_style=ft.TextStyle(color=self.theme.text_secondary),
-                    text_style=ft.TextStyle(color=self.theme.text_primary),
-                    border=ft.InputBorder.OUTLINE,
-                    prefix_icon=icons.ATTACH_MONEY,
-                    bgcolor=self.theme.fg,
-                    filled=True,
-                    keyboard_type=ft.KeyboardType.NUMBER,
-                    input_filter=ft.InputFilter(
-                        allow=True, regex_string=r"^\d*\.?\d*$"),
-                    border_radius=20,
-                )
+            hint_text="Monto",
+            hint_style=ft.TextStyle(color=self.theme.text_secondary),
+            text_style=ft.TextStyle(color=self.theme.text_primary),
+            border=ft.InputBorder.OUTLINE,
+            prefix_icon=icons.ATTACH_MONEY,
+            bgcolor=self.theme.fg,
+            filled=True,
+            keyboard_type=ft.KeyboardType.NUMBER,
+            input_filter=ft.InputFilter(
+                allow=True, regex_string=r"^\d*\.?\d*$"),
+            border_radius=20,
+        )
 
         self.panel = ft.Row([
-                    ft.IconButton(
-                        icon=icons.HANDSHAKE,
-                        icon_color=self.theme.text_primary,
-                        on_click=self.add_passive_database,
-                        icon_size=24
-                    ),
-                    ft.Text("Agregar Pasivo", color=self.theme.text_primary,
-                            size=14, weight=ft.FontWeight.W_500)
-                ])
+
+            ft.Button(
+                text="Añadir",
+                icon=icons.ADD,
+                icon_color=self.theme.text_primary,
+                color=self.theme.text_primary,
+                bgcolor=self.theme.fg,
+                on_click=self.add_passive_database,
+            )
+        ])
 
         self.total_sum = ft.Container(
             ft.Row([
                 ft.Text(
-                    f"Adeudo total ${self.get_total_sum():.2f} MXN",
+                    f"${self.get_total_sum():,.2f} MXN",
                     color=self.theme.red_color,
+                    size=20,
+                    style=ft.TextStyle(
+                        weight=ft.FontWeight.BOLD
+                    )
                 )
             ])
         )
 
         self.passive_list = ft.Column([], spacing=0, scroll=ft.ScrollMode.AUTO,
-            expand=True)
+                                      expand=True)
 
         self.add_passive_list(PassiveController.controller_fetch_passives())
 
@@ -191,7 +212,6 @@ class PassiveSection:
         return self.passive_section
 
 
-
 class PassiveItemView():
     def __init__(self, theme: Theme, page: ft.Page):
         self.page = page
@@ -202,7 +222,8 @@ class PassiveItemView():
     def pay_passive(self, e):
         if self.account_dropdown.value:
             try:
-                PassiveController.pay_passive(self.current_passive[0], self.account_dropdown.value)
+                PassiveController.pay_passive(
+                    self.current_passive[0], self.account_dropdown.value)
                 self.page.go("/passive")
             except Exception as e:
                 print(e)
@@ -222,7 +243,8 @@ class PassiveItemView():
 
         self.card = ft.Container(
             ft.Column([
-                ft.Text(self.current_passive[1].capitalize(), size=16, weight=ft.FontWeight.W_500),
+                ft.Text(self.current_passive[1].capitalize(
+                ), size=16, weight=ft.FontWeight.W_500),
 
                 ft.Divider(),
 
@@ -243,7 +265,7 @@ class PassiveItemView():
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     spacing=10
                 ),
-                
+
 
                 ft.Row(
                     [
@@ -257,13 +279,15 @@ class PassiveItemView():
 
                 ft.Row(
                     [
-                        ft.Icon(icons.CHECK_CIRCLE if self.current_passive[4] else icons.CANCEL, color=self.theme.green_color if self.current_passive[4] else self.theme.red_color, size=20), 
-                        ft.Text("Pagado" if self.current_passive[4] else "Aun sin pagar", size=14)
+                        ft.Icon(icons.CHECK_CIRCLE if self.current_passive[4] else icons.CANCEL,
+                                color=self.theme.green_color if self.current_passive[4] else self.theme.red_color, size=20),
+                        ft.Text(
+                            "Pagado" if self.current_passive[4] else "Aun sin pagar", size=14)
                     ],
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     spacing=10
                 ),
-                
+
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=10),
             padding=ft.padding.symmetric(horizontal=10, vertical=15),
             border_radius=20,
@@ -272,7 +296,8 @@ class PassiveItemView():
 
         self.account_dropdown = ft.Dropdown(
             hint_text="Cuenta origen",
-            options=[ft.dropdown.Option(text=f"{account[2]} $ {account[3]}", key=account[0]) for account in self.accounts if account[4]], 
+            options=[ft.dropdown.Option(
+                text=f"{account[2]} $ {account[3]}", key=account[0]) for account in self.accounts if account[4]],
             text_style=ft.TextStyle(color=self.theme.green_color),
             bgcolor=self.theme.bg,
             filled=True,
@@ -281,11 +306,12 @@ class PassiveItemView():
             visible=not self.current_passive[4],
         )
 
-        self.hint_text = ft.Text("Al pagar este pasivo, se descontara el monto de la cuenta seleccionada.", color=self.theme.text_secondary, size=12)
-
+        self.hint_text = ft.Text(
+            "Al pagar este pasivo, se descontara el monto de la cuenta seleccionada.", color=self.theme.text_secondary, size=12)
 
         self.pay_button = ft.Container(
-            content=ft.Text("Pagar", color=self.theme.bg, size=16, weight=ft.FontWeight.BOLD),
+            content=ft.Text("Pagar", color=self.theme.bg,
+                            size=16, weight=ft.FontWeight.BOLD),
             bgcolor=self.theme.green_color,
             padding=15,
             border_radius=20,
@@ -295,7 +321,8 @@ class PassiveItemView():
         )
 
         self.delete_button = ft.Container(
-            content=ft.Text("Eliminar", color=self.theme.bg, size=16, weight=ft.FontWeight.BOLD),
+            content=ft.Text("Eliminar", color=self.theme.bg,
+                            size=16, weight=ft.FontWeight.BOLD),
             bgcolor=self.theme.red_color,
             padding=15,
             border_radius=20,

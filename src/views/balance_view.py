@@ -2,6 +2,8 @@ from controllers.controller import (
     BalanceController,
 )
 
+from controllers.chart import ChartGenerator
+
 from themes.themes import Theme
 from flet import Icons as icons
 import flet as ft
@@ -11,13 +13,18 @@ class BalanceSection:
     def __init__(self, theme: Theme, page: ft.Page):
         self.theme = theme
         self.page = page
+        self.chart_generator = ChartGenerator()
         self.balance_content = None
+        days = []
+        balance = []
+        for item in BalanceController.fetch_snapshots():
+            days.append(item[2])
+            balance.append(float(item[1]))
 
-    def add_balance_database(self, e):
-        new_balance = self.balance_content.controls[1].controls[3].value
-        if new_balance == "":
-            return Dialogs.lost_data_dialog(self.page)
-        BalanceController.controller_set_balance(float(new_balance), new=True)
+        self.last_chart_route = self.chart_generator.balance_chart(
+            days=days,
+            balance=balance
+        )
 
     def draw(self, header):
         self.balance_content = ft.Column([
@@ -28,21 +35,12 @@ class BalanceSection:
                 ft.Text(f"{BalanceController.controller_fetch_balance(formated=True)}",
                         color=self.theme.text_primary, size=32, weight=ft.FontWeight.BOLD),
                 ft.Text(
-                    f"Ultima actualizacion: {BalanceController.fetch_balance_update()}", color=self.theme.text_secondary, size=14),
-                ft.TextField(
-                    hint_text="Nuevo Balance",
-                    hint_style=ft.TextStyle(color=self.theme.text_secondary),
-                    text_style=ft.TextStyle(color=self.theme.text_primary),
-                    border=ft.InputBorder.NONE,
-                    bgcolor=self.theme.fg,
-                    filled=True,
-                    keyboard_type=ft.KeyboardType.NUMBER,
-                    input_filter=ft.InputFilter(
-                        allow=True, regex_string=r"^\d*\.?\d*$"),
-                ),
-                ft.ElevatedButton("Actualizar Balance", bgcolor=self.theme.green_color,
-                                  color="#000000", on_click=self.add_balance_database)
+                    f"Ultima actualizacion: {BalanceController.fetch_last_date_snapshot()}", color=self.theme.text_secondary, size=14),
+                ft.Image(
+                    src=self.last_chart_route,
+                    width=700,
+                    fit=ft.ImageFit.CONTAIN,
+                )
             ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, expand=True),
         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
         return self.balance_content
-

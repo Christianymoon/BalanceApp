@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS balance_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    balance REAL NOT NULL,
+    created_at DATETIME NOT NULL
+);

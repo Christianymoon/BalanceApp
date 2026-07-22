@@ -1,0 +1,5 @@
+ALTER TABLE categories 
+ADD COLUMN is_active INTEGER DEFAULT 1;
+
+ALTER TABLE subcategories 
+ADD COLUMN is_active INTEGER DEFAULT 1;

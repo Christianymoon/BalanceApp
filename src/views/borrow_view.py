@@ -15,11 +15,17 @@ class BorrowSection:
         self.theme = theme
         self.page = page
 
-    def handle_loan(self, e, value):
-        self.page.data = {
-            "loan_id": value,
-            "active_id": None 
-        }
+    def handle_loan(self, e):
+        try:
+            self.page.data = {
+                "loan_id": e.control.data,
+                "active_id": None
+            }
+        except Exception as e:
+            Dialogs.error_dialog(self.page, str(e))
+            return
+
+        print(self.page.data)  # TODO: Remove this line after testing
         self.page.go("/loan")
 
     def get_loan_data(self, e):
@@ -44,7 +50,7 @@ class BorrowSection:
             "to": loan_to,
             "from": loan_from,
         }
-    
+
     def set_loan_database(self, e):
         loan_data = self.get_loan_data(e)
         if not loan_data:
@@ -99,11 +105,11 @@ class BorrowSection:
                     padding=ft.padding.symmetric(horizontal=10, vertical=15),
                     bgcolor=self.theme.fg,
                     border_radius=20,
-                    on_click=lambda e: self.handle_loan(e, loan[0])
+                    data=loan[0],
+                    on_click=self.handle_loan
                 )
             )
         self.page.update()
-        
 
     def ui_events(self, e):
         if e.control.value == "bank":
@@ -152,58 +158,63 @@ class BorrowSection:
                 self.loan_from,
             ]),
         )
-           
+
         self.loan_form = ft.Column([
             ft.TextField(
-            hint_text="Nombre del préstamo",
-            border=ft.InputBorder.OUTLINE,
-            hint_style=ft.TextStyle(color=self.theme.text_secondary),
-            text_style=ft.TextStyle(color=self.theme.text_primary),
-            prefix_icon=icons.PERSON,
-            bgcolor=self.theme.fg,
-            filled=True,
-            border_radius=20,
+                hint_text="Nombre del préstamo",
+                border=ft.InputBorder.OUTLINE,
+                hint_style=ft.TextStyle(color=self.theme.text_secondary),
+                text_style=ft.TextStyle(color=self.theme.text_primary),
+                prefix_icon=icons.PERSON,
+                bgcolor=self.theme.fg,
+                filled=True,
+                border_radius=20,
             ),
             ft.TextField(
-            hint_text="Monto del préstamo",
-            hint_style=ft.TextStyle(color=self.theme.text_secondary),
-            text_style=ft.TextStyle(color=self.theme.text_primary),
-            border=ft.InputBorder.OUTLINE,
-            prefix_icon=icons.ATTACH_MONEY,
-            bgcolor=self.theme.fg,
-            filled=True,
-            border_radius=20,
-            keyboard_type=ft.KeyboardType.NUMBER,
-            input_filter=ft.InputFilter(allow=True, regex_string=r"^\d*\.?\d*$"),
+                hint_text="Monto del préstamo",
+                hint_style=ft.TextStyle(color=self.theme.text_secondary),
+                text_style=ft.TextStyle(color=self.theme.text_primary),
+                border=ft.InputBorder.OUTLINE,
+                prefix_icon=icons.ATTACH_MONEY,
+                bgcolor=self.theme.fg,
+                filled=True,
+                border_radius=20,
+                keyboard_type=ft.KeyboardType.NUMBER,
+                input_filter=ft.InputFilter(
+                    allow=True, regex_string=r"^\d*\.?\d*$"),
             ),
             ft.TextField(
-            hint_text="Porcentaje de interés (%)",
-            value=0,
-            hint_style=ft.TextStyle(color=self.theme.text_secondary),
-            text_style=ft.TextStyle(color=self.theme.text_primary),
-            border=ft.InputBorder.OUTLINE,
-            prefix_icon=icons.PERCENT,
-            bgcolor=self.theme.fg,
-            filled=True,
-            border_radius=20,
-            keyboard_type=ft.KeyboardType.NUMBER,
-            input_filter=ft.InputFilter(allow=True, regex_string=r"^\d*\.?\d*$"),
+                hint_text="Porcentaje de interés (%)",
+                value=0,
+                hint_style=ft.TextStyle(color=self.theme.text_secondary),
+                text_style=ft.TextStyle(color=self.theme.text_primary),
+                border=ft.InputBorder.OUTLINE,
+                prefix_icon=icons.PERCENT,
+                bgcolor=self.theme.fg,
+                filled=True,
+                border_radius=20,
+                keyboard_type=ft.KeyboardType.NUMBER,
+                input_filter=ft.InputFilter(
+                    allow=True, regex_string=r"^\d*\.?\d*$"),
             ),
         ])
 
         self.account_dropdown = ft.Dropdown(
             hint_text="Cuenta origen",
-            options=[ft.dropdown.Option(text=f"{account[2]} ${account[3]}", key=account[0]) for account in self.accounts_actives if account[4]],
-            text_style=ft.TextStyle(color=self.theme.green_color),
+            options=[ft.dropdown.Option(text=f"{account[2]} ${account[3]}", key=account[0])
+                     for account in self.accounts_actives if account[4]],
+            text_style=ft.TextStyle(color=self.theme.text_primary),
             bgcolor=self.theme.fg,
+            fill_color=self.theme.fg,
             filled=True,
             border=ft.InputBorder.OUTLINE,
             border_radius=20,
         )
 
         self.add_button = ft.Container(
-            content=ft.Text("Agregar", color=self.theme.bg, size=16, weight=ft.FontWeight.BOLD),
-            bgcolor=self.theme.green_color,
+            content=ft.Text("Agregar", color=self.theme.text_primary,
+                            size=16, weight=ft.FontWeight.BOLD),
+            bgcolor=self.theme.fg,
             padding=15,
             border_radius=20,
             alignment=ft.alignment.center,
@@ -226,4 +237,3 @@ class BorrowSection:
             margin=ft.margin.symmetric(horizontal=20, vertical=10),
             expand=True,
         )
-
