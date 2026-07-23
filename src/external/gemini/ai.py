@@ -1,8 +1,10 @@
 import httpx
 import json
+import os
+from dotenv import load_dotenv
 
-# TODO: mover a variable de entorno
-_API_KEY = "AIzaSyAgwLDdYA-nlXwzyW3Ih3j2wmki8dxBOeA"
+load_dotenv()
+_API_KEY = os.getenv("GEMINI_API_KEY")
 _BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
@@ -22,8 +24,6 @@ class Gemini:
             "x-goog-api-key": self.api_key,
             "Content-Type": "application/json",
         }
-
-        print(thinking_level)
 
         data = {
             "model": model,

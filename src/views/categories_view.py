@@ -1,6 +1,8 @@
 from components.dialogs import Dialogs
 from controllers.controller import (
-    CategoriesController, AIChatController)
+    CategoriesController)
+
+from controllers.AI.controller import AIChatController
 
 from components.headers import HeaderSection as Header
 from components.dialogs import Dialogs

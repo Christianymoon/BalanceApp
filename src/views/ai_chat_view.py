@@ -4,7 +4,7 @@ from flet import Icons as icons
 import threading
 
 from themes.themes import Theme
-from controllers.controller import AIChatController
+from controllers.AI.controller import AIChatController
 from client.client import ClientStorage
 
 

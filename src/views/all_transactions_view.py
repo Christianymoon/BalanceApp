@@ -5,7 +5,7 @@ import flet as ft
 from components.headers import HeaderSection
 from controllers.controller import CategoriesController, TransactionController
 from controllers.date_groups import create_week_separator, get_group_date
-from dto.transactions import TransactionOutputDTO
+from dto.transactions import TransactionOutputDTO, TransactionFilterDTO
 from themes.themes import Theme
 
 
@@ -13,7 +13,8 @@ class AllTransactionsView:
     def __init__(self, theme: Theme, page: ft.Page):
         self.page = page
         self.theme = theme
-        self.transactions = TransactionController.fetch_transactions()
+        filter = TransactionFilterDTO()  # get all transaction without filter
+        self.transactions = TransactionController.fetch_transactions(filter)
         self.categories_controller = CategoriesController()
         self.previous_date = None
 

@@ -1,3 +1,4 @@
+from dto.transactions import TransactionFilterDTO
 import flet as ft
 from flet import Icons as icons
 
@@ -13,6 +14,7 @@ from themes.themes import Theme
 from client.client import ClientStorage
 from dto.transactions import TransactionOutputDTO
 from controllers.date_groups import get_group_date, create_week_separator
+from controllers.transactions.statistics import fetch_summary
 
 
 class MainSection:
@@ -39,7 +41,8 @@ class MainSection:
                 create_week_separator(week_start, self.theme))
 
     def _charge_transaction_list(self):
-        transactions = TransactionController.fetch_last_transactions(limit=30)
+        filter = TransactionFilterDTO(limit=30)
+        transactions = TransactionController.fetch_transactions(filter)
         for transaction in transactions:
             self.calculate_period_time(
                 date=transaction.created_at, timelapse="week")
@@ -50,14 +53,14 @@ class MainSection:
     def set_states(self):
         if self.in_out_mode_state:
             if self.portfolio_mode_state:
-                amount = TransactionController.controller_fetch_sum(
-                    is_income=True)
+                filter = TransactionFilterDTO(is_income=True)
+                amount = fetch_summary(filter)
                 self.text_name.value = "Ingresos"
                 self.text_amount.value = amount
 
             else:
-                amount = TransactionController.controller_fetch_sum(
-                    is_income=False)
+                filter = TransactionFilterDTO(is_income=False)
+                amount = fetch_summary(filter)
                 self.text_name.value = "Gastos"
                 self.text_amount.value = amount
 

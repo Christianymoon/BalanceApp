@@ -38,20 +38,77 @@ class Database:
         conn.commit()
         cursor.close()
 
-    def fetch_transactions(self):
+    def fetch_transactions(self, filter):
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM transactions ORDER BY id DESC")
+        sql = """
+            SELECT * FROM transactions 
+            WHERE 1 = 1 
+        """
+        params = []
+
+        if filter.date_to and filter.date_from:
+            sql += " AND created_at BETWEEN ? AND ?"
+            params.append(filter.date_from)
+            params.append(filter.date_to)
+
+        if filter.category_id:
+            sql += " AND category_id = ?"
+            params.append(filter.category_id)
+
+        if filter.subcategory_id:
+            sql += " AND subcategory_id = ?"
+            params.append(filter.subcategory_id)
+
+        if filter.is_income is not None:
+            sql += " AND is_income = ?"
+            params.append(filter.is_income)
+
+        sql += " ORDER BY id DESC"
+
+        if filter.limit:
+            sql += " LIMIT ?"
+            params.append(filter.limit)
+
+        cursor.execute(sql, params)
         result = cursor.fetchall()
         cursor.close()
         return [TransactionOutputDTO(t[0], t[1], t[2], t[7], t[3], t[4], t[5], t[6]) for t in result]
 
-    def fetch_last_transactions(self, limit=5):
+    def fetch_summary(self, filter):
         cursor = conn.cursor()
-        cursor.execute(
-            "SELECT * FROM transactions ORDER BY id DESC LIMIT ?", (limit,))
-        result = cursor.fetchall()
+        sql = """
+            SELECT SUM(price) FROM transactions 
+            WHERE 1 = 1 
+        """
+        params = []
+
+        if filter.date_to and filter.date_from:
+            sql += " AND created_at BETWEEN ? AND ?"
+            params.append(filter.date_from)
+            params.append(filter.date_to)
+
+        if filter.category_id:
+            sql += " AND category_id = ?"
+            params.append(filter.category_id)
+
+        if filter.subcategory_id:
+            sql += " AND subcategory_id = ?"
+            params.append(filter.subcategory_id)
+
+        if filter.is_income is not None:
+            sql += " AND is_income = ?"
+            params.append(filter.is_income)
+
+        sql += " ORDER BY created_at DESC"
+
+        if filter.limit:
+            sql += " LIMIT ?"
+            params.append(filter.limit)
+
+        cursor.execute(sql, params)
+        result = cursor.fetchone()
         cursor.close()
-        return [TransactionOutputDTO(t[0], t[1], t[2], t[7], t[3], t[4], t[5], t[6]) for t in result]
+        return result
 
     def update_transaction(self, id, name, category, price, is_income, expense_percentage, subcategory):
         cursor = conn.cursor()

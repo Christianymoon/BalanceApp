@@ -34,3 +34,13 @@ class TransactionUpdateDTO:
     price: float
     type: str
     account_id: Optional[int] = None
+
+
+@dataclass
+class TransactionFilterDTO:
+    limit: Optional[int] = None
+    date_from: Optional[datetime] = None
+    date_to: Optional[datetime] = None
+    category_id: Optional[int] = None
+    subcategory_id: Optional[int] = None
+    is_income: Optional[bool] = None

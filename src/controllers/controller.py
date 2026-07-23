@@ -1,5 +1,5 @@
+from dto.transactions import TransactionFilterDTO
 from dto.transactions import TransactionOutputDTO
-from external.gemini.ai import Gemini
 from enum import Enum
 from db.database import Database
 from datetime import datetime, date
@@ -54,7 +54,8 @@ class SearchController:
 
     def controller_search_transactions(query):
         db = Database()
-        transactions = db.fetch_transactions()
+        filter = TransactionFilterDTO()
+        transactions = db.fetch_transactions(filter)
 
         query_lower = query.lower()
         filtered_transactions = [
@@ -289,20 +290,10 @@ class TransactionController:
             created_at)
 
     @staticmethod
-    def fetch_last_transactions(limit: int) -> list[TransactionOutputDTO]:
-        db = Database()
-        try:
-            transactions = db.fetch_last_transactions(limit)
-            return transactions
-        except Exception as e:
-            logging.error(f"Error fetching transactions: {e}", exc_info=True)
-            return []
-
-    @staticmethod
-    def fetch_transactions() -> list[TransactionOutputDTO]:
+    def fetch_transactions(filter: TransactionFilterDTO) -> list[TransactionOutputDTO]:
         try:
             db = Database()
-            transactions = db.fetch_transactions()
+            transactions = db.fetch_transactions(filter)
             return transactions
         except Exception as e:
             logging.error(f"Error fetching transactions: {e}", exc_info=True)
@@ -310,7 +301,8 @@ class TransactionController:
 
     @staticmethod
     def controller_fetch_sum(is_income=True) -> str:
-        all_transactions = TransactionController.fetch_transactions()
+        filter = TransactionFilterDTO()
+        all_transactions = TransactionController.fetch_transactions(filter)
         try:
             if is_income:
                 income_transactions = [
@@ -644,239 +636,6 @@ class LoanController:
         except Exception as e:
             logging.error(f"Error during set loan {e}", exc_info=True)
             raise e
-
-
-class AIChatController:
-
-    def __init__(self):
-        self.gemini = Gemini()
-
-        self.gemini.add_tool(
-            {
-                "fetch_categories": {
-                    "function": CategoriesController().fetch_all_categories,
-                    "dto": None,
-                    "schema": {
-                        "type": "function",
-                        "name": "fetch_categories",
-                        "description": "Obtiene todas las categorias",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {}
-                        }
-                    }
-                },
-
-                "fetch_subcategories": {
-                    "function": CategoriesController().fetch_all_subcategories,
-                    "dto": None,
-                    "schema": {
-                        "type": "function",
-                        "name": "fetch_subcategories",
-                        "description": "Obtiene todas las subcategorias",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {}
-                        }
-                    }
-                },
-
-                "set_transaction": {
-                    "function": TransactionController.create_transaction,
-                    "dto": TransactionDTO,
-                    "schema": {
-                        "type": "function",
-                        "name": "set_transaction",
-                        "description": "Agrega una nueva transaccion",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                },
-                                "category": {
-                                    "type": "integer",
-                                },
-                                "subcategory": {
-                                    "type": "integer",
-                                },
-                                "price": {
-                                    "type": "number",
-                                },
-                                "type": {
-                                    "type": "string",
-                                    "enum": [
-                                        TransactionType.INCOME.value,
-                                        TransactionType.SPENT.value,
-                                        TransactionType.CREDIT.value
-                                    ],
-                                    "description": "Tipo de transacción, si no se especifica pide al usuario que tipo de transaccion es, ademas si es ingreso y gasto, pide al usuario la cuenta donde hacer la transaccion"
-                                },
-                                "account_id": {
-                                    "type": "integer",
-                                    "description": """
-                                        Registra una nueva transacción.
-
-                                        Requisitos:
-                                        - Para ingresos y gastos es obligatorio conocer la cuenta.
-                                        - Las transacciones obligatoriamente se deben hacer a cuentas con fondos liquidos
-                                        - Si hay varias cuentas disponibles y el usuario no indica cuál usar, primero consulta get_accounts y pregunta al usuario.
-                                        - Nunca selecciones una cuenta automáticamente.
-                                        """,
-                                },
-                            },
-                            "required": ["name", "category", "subcategory", "price", "type", "account_id"]
-                        }
-                    }
-                },
-
-                "fetch_last_100_transactions": {
-                    "function": self.fetch_last_100_transactions,
-                    "dto": None,
-                    "schema": {
-                        "type": "function",
-                        "name": "fetch_last_100_transactions",
-                        "description": "Obtiene las últimas 100 transacciones",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {}
-                        }
-                    }
-                },
-
-                "update_transaction": {
-                    "function": TransactionController.update_transaction,
-                    "dto": TransactionUpdateDTO,
-                    "schema": {
-                        "type": "function",
-                        "name": "update_transaction",
-                        "description": "Actualiza una transacción",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "id": {
-                                    "type": "integer",
-                                    "description": "ID de la transacción"
-                                },
-                                "name": {
-                                    "type": "string",
-                                    "description": "Nombre de la transacción"
-                                },
-                                "category": {
-                                    "type": "string",
-                                    "description": "Categoría de la transacción"
-                                },
-                                "subcategory": {
-                                    "type": "string",
-                                    "description": "Subcategoría de la transacción"
-                                },
-                                "price": {
-                                    "type": "number",
-                                    "description": "Precio de la transacción"
-                                },
-                                "type": {
-                                    "type": "string",
-                                    "description": "Tipo de transacción, si no se especifica pide al usuario que tipo de transaccion es, ademas si es ingreso y gasto, pide al usuario la cuenta donde hacer la transaccion"
-                                },
-                                "account_id": {
-                                    "type": "integer",
-                                    "description": "ID de la cuenta a la que se hizo la transaccion, cuidado no uses el id de la transaccion, la cuenta a la que se hizo la transaccion."
-                                }
-                            },
-                            "required": ["id", "name", "category", "subcategory", "price", "type", "account_id"]
-                        }
-                    }
-                },
-
-                "get_accounts": {
-                    "function": ActiveController.controller_fetch_actives,
-                    "dto": None,
-                    "schema": {
-                        "type": "function",
-                        "name": "get_accounts",
-                        "description": "Obtiene todas las cuentas con su saldo actual",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {}
-                        }
-                    }
-                }
-            },
-
-        )
-
-    def fetch_last_100_transactions(self):
-        """Obtiene las últimas 100 transacciones de la base de datos."""
-        try:
-            db = Database()
-            cursor = db.__class__.__dict__  # acceso directo por método interno
-            from db.db_connection import conn
-            cur = conn.cursor()
-            cur.execute(
-                "SELECT id, name, category, price, is_income, expense_percentage, created_at, subcategory "
-                "FROM transactions ORDER BY id DESC LIMIT 100"
-            )
-            result = cur.fetchall()
-            cur.close()
-            return result
-        except Exception as e:
-            logging.error(
-                f"Error fetching last 100 transactions for AI: {e}", exc_info=True)
-            return []
-
-    def build_financial_context(self) -> str:
-        """Construye un resumen financiero estructurado para el prompt."""
-
-        passives = PassiveController.controller_fetch_passives()
-        actives = ActiveController.controller_fetch_actives()
-        balance = BalanceController.controller_fetch_balance(formated=True)
-        liquidity = LiquidController.get(formated=True)
-
-        financial_summary = {
-            "data": {
-                "passives": passives,
-                "actives": actives,
-                "current_balance": balance,
-                "current_liquidity": liquidity
-            }
-
-        }
-
-        return financial_summary
-
-    def analyze_with_ai(self, user_prompt: str, model: str, thinking_level: str) -> str:
-        """
-        Envía el contexto financiero + prompt del usuario a Gemini y retorna la respuesta.
-        """
-        try:
-            financial_context = self.build_financial_context()
-
-            full_prompt = (
-                "Eres un asistente financiero llamado Kara, no eres un doctor, no eres un asesor financiero, no eres un contador, no eres un asesor de prestamos, no eres un asesor de inversiones, eres un asistente financiero."
-                "Tu nombre fue basado en un personaje del juego Detroit Become Human uno de los videojuegos favoritos de Christian (el desarrollador), tu personalidad se puede basar en este personaje, si el usuario te pregunta de donde sacaste tu nombre mencionas esto, si no lo hace no lo menciones."
-                "puedes ser amigable y usar emojis de vez en cuando, si la pregunta tiene humor, o no tiene nada que ver con finanzas, no es necesario que uses emojis siempre"
-                "Al igual que el personaje de Kara podrias tener momentos en los que podrias contradecir al usuario si consideras que la decision financiera es arriesgada y con amabilidad respondes por que"
-                "Contexto: (el contexto puede omitirse si no tiene nada que ver con lo que se pregunta)"
-                f"{financial_context}\n\n"
-                f"Pregunta del usuario: {user_prompt}"
-            )
-
-            response = self.gemini.generate_interaction(
-                full_prompt, model, thinking_level)
-            return response["content"]
-        except Exception as e:
-            logging.error(f"Error during AI analysis: {e}", exc_info=True)
-            return f"Error al procesar la respuesta de IA: {str(e)}"
-
-    def generate_recommendations(self, user_prompt: str, model: str = "gemini-2.5-flash-lite") -> str:
-        try:
-            context = "Estoy haciendo una clasificacion de categorias de finanzas personales, escribe una breve descripcion para entender que se puede clasificar, no uses markdown, 4 palabras minimo, 15 palabras maximo: " + user_prompt
-            response = self.gemini.generate_interaction(context, model)
-            return response["content"]
-        except Exception as e:
-            logging.error(
-                f"Error during AI recommendation: {e}", exc_info=True)
-            return f"Error al procesar la respuesta de IA"
 
 
 class CategoriesController():
