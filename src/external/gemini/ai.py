@@ -9,7 +9,10 @@ try:
     load_dotenv()
     _API_KEY = os.getenv("GEMINI_API_KEY")
 except ImportError:
-    _API_KEY = "YOUR_API_KEY_HERE"
+    _API_KEY = None
+
+if not _API_KEY:
+    _API_KEY = "YOUR_API_KEY"
 
 
 def default_json_serializer(obj):
