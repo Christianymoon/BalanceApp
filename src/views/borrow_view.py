@@ -1,13 +1,10 @@
-from controllers.controller import (
-    LoanController,
-    ActiveController,
-)
-
-from components.dialogs import Dialogs
-
-from themes.themes import Theme
 from flet import Icons as icons
 import flet as ft
+
+from controllers.actives.controller import ActiveController
+from controllers.loans.controller import LoanController
+from components.dialogs import Dialogs
+from themes.themes import Theme
 
 
 class BorrowSection:
@@ -25,7 +22,6 @@ class BorrowSection:
             Dialogs.error_dialog(self.page, str(e))
             return
 
-        print(self.page.data)  # TODO: Remove this line after testing
         self.page.go("/loan")
 
     def get_loan_data(self, e):

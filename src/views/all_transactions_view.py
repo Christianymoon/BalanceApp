@@ -1,11 +1,13 @@
 from datetime import date
-from flet import Icons as icons
+
 import flet as ft
+from flet import Icons as icons
 
 from components.headers import HeaderSection
-from controllers.controller import CategoriesController, TransactionController
+from controllers.categories.controller import CategoriesController
 from controllers.date_groups import create_week_separator, get_group_date
-from dto.transactions import TransactionOutputDTO, TransactionFilterDTO
+from controllers.transactions.controller import TransactionController
+from dto.transactions import TransactionFilterDTO, TransactionOutputDTO
 from themes.themes import Theme
 
 

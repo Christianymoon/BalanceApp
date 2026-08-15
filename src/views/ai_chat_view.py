@@ -1,7 +1,8 @@
+import threading
 from enum import Enum
+
 import flet as ft
 from flet import Icons as icons
-import threading
 
 from themes.themes import Theme
 from controllers.AI.controller import AIChatController
@@ -32,8 +33,24 @@ class AIChatView:
         self._thinking_bubble = None
         self.client_storage = ClientStorage(self.page)
         self.aichat_controller = AIChatController()
+        self.thinking_phrase = "Analizando tus finanzas..."
+        self._thinking_text = None
 
     # ------------------------------------------------------------------ helpers
+
+    def set_thinking_phrase(self, phrase: str):
+        self.thinking_phrase = phrase
+        if self._thinking_text:
+            self._thinking_text.value = phrase
+            self.page.update()
+
+    def _create_thinking_text(self) -> ft.Text:
+        self._thinking_text = ft.Text(
+            self.thinking_phrase,
+            color=self.theme.text_secondary, size=12,
+            italic=True,
+        )
+        return self._thinking_text
 
     def _bubble(self, text: str, is_user: bool) -> ft.Container:
         """Crea una burbuja de mensaje con estilo diferenciado."""
@@ -115,9 +132,7 @@ class AIChatView:
                     content=ft.Row([
                         ft.ProgressRing(width=14, height=14, stroke_width=2,
                                         color=self.theme.text_primary),
-                        ft.Text("Analizando tus finanzas...",
-                                color=self.theme.text_secondary, size=12,
-                                italic=True),
+                        self._create_thinking_text(),
                     ], spacing=8),
                     bgcolor=self.theme.fg,
                     border_radius=16,
@@ -165,7 +180,7 @@ class AIChatView:
         # Llamar a la IA en hilo separado para no bloquear la UI
         def run_ai():
             response = self.aichat_controller.analyze_with_ai(
-                prompt, model, thinking_level=thinking_level)
+                prompt, model, thinking_level=thinking_level, instance=self)
             self._remove_thinking()
             self._add_message(response, is_user=False)
             self.prompt_field.disabled = False
@@ -182,24 +197,6 @@ class AIChatView:
     def draw(self, header) -> ft.Column:
         # ---- Header
         header_bar = header.create("Kara AI", return_page=True)
-
-        # ---- Banner informativo
-        info_banner = ft.Container(
-            content=ft.Row([
-                ft.Icon(icons.INFO_OUTLINE,
-                        color=self.theme.text_primary, size=16),
-                ft.Text(
-                    "Analiza tus últimas 100 transacciones con IA",
-                    color=self.theme.text_secondary,
-                    size=12,
-                ),
-            ], spacing=8),
-            bgcolor=self.theme.fg,
-            # border=ft.border.all(1, self.theme.text_primary),
-            border_radius=20,
-            padding=ft.padding.symmetric(horizontal=16, vertical=8),
-            margin=ft.margin.symmetric(horizontal=0, vertical=6),
-        )
 
         # ---- Sugerencias de prompts rápidos
         suggestions = [
@@ -375,7 +372,6 @@ class AIChatView:
         return ft.Container(
             content=ft.Column([
                 header_bar,
-                info_banner,
                 models,
                 chips_row,
                 messages_area,

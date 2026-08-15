@@ -1,12 +1,11 @@
-from controllers.AI.tools import gemini_tools
-from controllers.controller import (
-    BalanceController,
-    PassiveController,
-    ActiveController,
-    LiquidController
-)
-from external.gemini.ai import Gemini
 import logging
+
+from controllers.actives.controller import ActiveController
+from controllers.AI.tools import gemini_tools
+from controllers.balance.controller import BalanceController
+from controllers.liquid.controller import LiquidController
+from controllers.passives.controller import PassiveController
+from external.gemini.ai import Gemini
 
 
 class AIChatController:
@@ -35,7 +34,7 @@ class AIChatController:
 
         return financial_summary
 
-    def analyze_with_ai(self, user_prompt: str, model: str, thinking_level: str) -> str:
+    def analyze_with_ai(self, user_prompt: str, model: str, thinking_level: str, instance=None) -> str:
         """
         Envía el contexto financiero + prompt del usuario a Gemini y retorna la respuesta.
         """
@@ -53,7 +52,7 @@ class AIChatController:
             )
 
             response = self.gemini.generate_interaction(
-                full_prompt, model, thinking_level)
+                full_prompt, model, thinking_level, instance)
             return response["content"]
         except Exception as e:
             logging.error(f"Error during AI analysis: {e}", exc_info=True)

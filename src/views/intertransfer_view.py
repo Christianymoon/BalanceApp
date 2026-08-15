@@ -1,11 +1,10 @@
 import flet as ft
-from themes.themes import Theme
 from flet import Icons as icons
 
+from controllers.actives.controller import ActiveController
 from components.headers import HeaderSection
 from components.dialogs import Dialogs
-
-from controllers.controller import ActiveController
+from themes.themes import Theme
 
 
 class IntertransferView:

@@ -1,7 +1,7 @@
-from core.config import FLET_APP_STORAGE_DATA
-
 import logging
 import os
+
+from core.config import FLET_APP_STORAGE_DATA
 
 try:
 

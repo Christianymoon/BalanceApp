@@ -1,5 +1,6 @@
-from themes.themes import Theme
 import flet as ft
+
+from themes.themes import Theme
 
 
 class ErrorPage():

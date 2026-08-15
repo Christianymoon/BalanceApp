@@ -1,14 +1,12 @@
-from components.dialogs import Dialogs
-from controllers.controller import (
-    CategoriesController)
-
-from controllers.AI.controller import AIChatController
-
-from components.headers import HeaderSection as Header
-from components.dialogs import Dialogs
-from client.client import ClientStorage
 import flet as ft
 from flet import Icons as icons
+
+from components.dialogs import Dialogs
+from components.headers import HeaderSection as Header
+from components.dialogs import Dialogs
+from controllers.categories.controller import CategoriesController
+from controllers.AI.controller import AIChatController
+from client.client import ClientStorage
 from themes.themes import Theme
 
 

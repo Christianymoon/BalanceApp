@@ -1,12 +1,9 @@
-# from sqlalchemy import label
-from themes.themes import Theme
-from controllers.controller import UserDataController
-from flet import Icons as icons
 import flet as ft
+from flet import Icons as icons
 
-
-DEFAULT_PROFILE_PIC = "./assets/avatar/profile.png"
-PROFILE_PIC_KEY = "christianymoon.finance.profile_pic"
+from controllers.controller import UserDataController
+from core.config import DEFAULT_PROFILE_PIC, PROFILE_PIC_KEY
+from themes.themes import Theme
 
 
 class UserView:

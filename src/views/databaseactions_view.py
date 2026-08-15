@@ -1,11 +1,11 @@
-from components.dialogs import Dialogs
 import flet as ft
+
+
+from controllers.controller import DatabaseController
+from controllers.categories.controller import CategoriesController
+from controllers.transactions.controller import TransactionController
+from components.dialogs import Dialogs
 from themes.themes import Theme
-from controllers.controller import (
-    DatabaseController,
-    TransactionController,
-    CategoriesController,
-)
 
 
 class DatabaseActionsView:

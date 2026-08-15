@@ -1,17 +1,16 @@
-import flet as ft
-from flet import Icons as icons
-from setup import log_dir
-from controllers.controller import DatabaseController
-from controllers.controller import UserDataController
-from controllers.controller import BalanceController
-# from components.notification_manager import NotificationManager
+import logging
 
+import flet as ft
+
+from setup import log_dir
+from controllers.controller import DatabaseController, UserDataController
+from controllers.balance.controller import BalanceController
 from client.client import ClientStorage
 from themes.themes import LigthMode, DarkMode
 from router import navigate_to
 
+
 from core.config import ASSETS_DIR
-import logging
 
 
 class FinanceApp:

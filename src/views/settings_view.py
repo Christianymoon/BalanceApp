@@ -1,12 +1,13 @@
-from themes.themes import Theme
-from client.client import ClientStorage
-from flet import Icons as icons
-import flet as ft
-import os
 import logging
+import os
 
-from setup import log_dir
+import flet as ft
+from flet import Icons as icons
+
+from client.client import ClientStorage
 from core.config import FLET_APP_STORAGE_DATA
+from setup import log_dir
+from themes.themes import Theme
 
 
 class Settings:

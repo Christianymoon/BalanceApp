@@ -1,12 +1,8 @@
-from controllers.controller import (
-    BalanceController,
-)
-
-from controllers.chart import ChartGenerator
-
-from themes.themes import Theme
-from flet import Icons as icons
 import flet as ft
+
+from controllers.balance.controller import BalanceController
+from controllers.chart import ChartGenerator
+from themes.themes import Theme
 
 
 class BalanceSection:

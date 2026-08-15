@@ -1,9 +1,18 @@
-from flet.core import cupertino_colors
-import sqlite3
 from db.db_connection import conn
 from db.migrate import make_migrations
-
 from dto.transactions import TransactionOutputDTO
+
+
+def normalize_date(d):
+    if not d:
+        return None
+    d_str = str(d).strip()
+    if len(d_str) >= 10 and d_str[4] == '-' and d_str[7] == '-':
+        return d_str[:10]
+    if len(d_str) >= 10 and d_str[2] == '/' and d_str[5] == '/':
+        parts = d_str[:10].split('/')
+        return f"{parts[2]}-{parts[1]}-{parts[0]}"
+    return d_str
 
 
 class Database:
@@ -47,16 +56,23 @@ class Database:
         params = []
 
         if filter.date_to and filter.date_from:
-            sql += " AND created_at BETWEEN ? AND ?"
-            params.append(filter.date_from)
-            params.append(filter.date_to)
+            date_from = normalize_date(filter.date_from)
+            date_to = normalize_date(filter.date_to)
+            sql += """ AND (
+                CASE 
+                    WHEN created_at LIKE '__/__/____%' THEN substr(created_at, 7, 4) || '-' || substr(created_at, 4, 2) || '-' || substr(created_at, 1, 2)
+                    ELSE substr(created_at, 1, 10)
+                END BETWEEN ? AND ?
+            )"""
+            params.append(date_from)
+            params.append(date_to)
 
         if filter.category_id:
-            sql += " AND category_id = ?"
+            sql += " AND category = ?"
             params.append(filter.category_id)
 
         if filter.subcategory_id:
-            sql += " AND subcategory_id = ?"
+            sql += " AND subcategory = ?"
             params.append(filter.subcategory_id)
 
         if filter.is_income is not None:
@@ -83,16 +99,23 @@ class Database:
         params = []
 
         if filter.date_to and filter.date_from:
-            sql += " AND created_at BETWEEN ? AND ?"
-            params.append(filter.date_from)
-            params.append(filter.date_to)
+            date_from = normalize_date(filter.date_from)
+            date_to = normalize_date(filter.date_to)
+            sql += """ AND (
+                CASE 
+                    WHEN created_at LIKE '__/__/____%' THEN substr(created_at, 7, 4) || '-' || substr(created_at, 4, 2) || '-' || substr(created_at, 1, 2)
+                    ELSE substr(created_at, 1, 10)
+                END BETWEEN ? AND ?
+            )"""
+            params.append(date_from)
+            params.append(date_to)
 
         if filter.category_id:
-            sql += " AND category_id = ?"
+            sql += " AND category = ?"
             params.append(filter.category_id)
 
         if filter.subcategory_id:
-            sql += " AND subcategory_id = ?"
+            sql += " AND subcategory = ?"
             params.append(filter.subcategory_id)
 
         if filter.is_income is not None:

@@ -1,3 +1,5 @@
+import logging
+
 import flet as ft
 
 from views.main_view import MainSection
@@ -19,8 +21,6 @@ from views.user_view import UserView
 
 from components.headers import HeaderSection
 from themes.themes import Theme
-
-import logging
 
 
 views = {

@@ -1,8 +1,9 @@
-from matplotlib.rcsetup import ValidateInStrings
 from datetime import date, datetime, timedelta
-from themes.themes import Theme
-import flet as ft
 import logging
+
+import flet as ft
+
+from themes.themes import Theme
 
 
 def get_group_date(date: date, timelapse: str):
@@ -42,7 +43,7 @@ def create_week_separator(week_start: date, theme: Theme):
             size=14,
             weight=ft.FontWeight.W_500
         ),
-        padding=ft.padding.only(top=5),
+        padding=ft.padding.only(top=10),
         expand=True
     )
 

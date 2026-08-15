@@ -2,15 +2,26 @@ class Theme():
     pass
 
 
+# class DarkMode(Theme):
+#     bg = "#04060A"
+#     fg = "#0A0E15"
+#     text_primary = "#FFFFFF"
+#     text_secondary = "#d3d3d3"
+#     green_color = "#3DDC97"
+#     red_color = "#FF6B6B"
+#     blue_color = "#00C2FF"
+#     purple_color = "#B18CFF"
+
+
 class DarkMode(Theme):
-    bg = "#04060A"             # Fondo principal oscuro
-    fg = "#0A0E15"             # Superficie muy oscura para separar cards
-    text_primary = "#FFFFFF"   # Texto principal gris claro
-    text_secondary = "#d3d3d3"  # Texto secundario gris más claro
-    green_color = "#3DDC97"    # Verde neón para ganancias
-    red_color = "#FF6B6B"      # Rojo para pérdidas
-    blue_color = "#00C2FF"     # Azul neón para acentos
-    purple_color = "#B18CFF"
+    bg = "#121212"
+    fg = "#1E1E1E"
+    text_primary = "#D5D5D5"
+    text_secondary = "#8A8A8A"
+    green_color = "#7A9E7E"
+    red_color = "#C07070"
+    blue_color = "#7E9BB5"
+    purple_color = "#9A8EAD"
 
 
 class LigthMode(Theme):

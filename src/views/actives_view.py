@@ -1,12 +1,9 @@
-from controllers.controller import (
-    ActiveController,
-)
-
-from components.dialogs import Dialogs
-
-from themes.themes import Theme
 from flet import Icons as icons
 import flet as ft
+
+from controllers.actives.controller import ActiveController
+from components.dialogs import Dialogs
+from themes.themes import Theme
 
 
 class ActiveSection:

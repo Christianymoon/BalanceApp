@@ -1,10 +1,15 @@
-from controllers.controller import (
-    CategoriesController,
-    TransactionController,
-    ActiveController,
-)
-from dto.transactions import TransactionDTO, TransactionUpdateDTO
+from datetime import date
 from enum import Enum
+
+from controllers.actives.controller import ActiveController
+from controllers.categories.controller import CategoriesController
+from controllers.transactions.controller import TransactionController
+from controllers.transactions.statistics import fetch_summary
+from dto.transactions import (
+    TransactionDTO,
+    TransactionFilterDTO,
+    TransactionUpdateDTO,
+)
 
 
 class TransactionType(Enum):
@@ -14,6 +19,46 @@ class TransactionType(Enum):
 
 
 gemini_tools = {
+
+    "fetch_transactions": {
+        "function": TransactionController.fetch_transactions,
+        "dto": TransactionFilterDTO,
+        "schema": {
+            "type": "function",
+            "name": "fetch_transactions",
+            "description": "Obtiene todas las transacciones",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Limite de transacciones a obtener"
+                    },
+                    "date_from": {
+                        "type": "string",
+                        "description": """Fecha de inicio en formato yyyy-mm-dd, si no se especifica avisa al usuario que puedes calcularlo a partir de la fecha del inicio de semana de la actual fecha"""
+                    },
+                    "date_to": {
+                        "type": "string",
+                        "description": """Fecha de fin en formato yyyy-mm-dd, si no se especifica avisa al usuario que puedes calcularlo a partir de la fecha de hoy"""
+                    },
+                    "category_id": {
+                        "type": "integer",
+                        "description": "ID de la categoría"
+                    },
+                    "subcategory_id": {
+                        "type": "integer",
+                        "description": "ID de la subcategoría"
+                    },
+                    "is_income": {
+                        "type": "boolean",
+                        "description": "Indica si la transacción es un ingreso o egreso"
+                    }
+                }
+            }
+        }
+    },
+
     "fetch_categories": {
         "function": CategoriesController().fetch_all_categories,
         "dto": None,
@@ -148,4 +193,59 @@ gemini_tools = {
             }
         }
     },
+
+    "fetch_summary": {
+        "function": fetch_summary,
+        "dto": TransactionFilterDTO,
+        "schema": {
+            "type": "function",
+            "name": "fetch_summary",
+            "description": "Obtiene el resumen de transacciones",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Limite de transacciones a obtener"
+                    },
+                    "date_from": {
+                        "type": "string",
+                        "description": "Fecha de inicio en formato yyyy-mm-dd"
+                    },
+                    "date_to": {
+                        "type": "string",
+                        "description": "Fecha de fin en formato yyyy-mm-dd"
+                    },
+                    "category_id": {
+                        "type": "integer",
+                        "description": "ID de la categoría"
+                    },
+                    "subcategory_id": {
+                        "type": "integer",
+                        "description": "ID de la subcategoría"
+                    },
+                    "is_income": {
+                        "type": "boolean",
+                        "description": "Indica si es ingreso o egreso"
+                    },
+                },
+                "required": []
+            }
+        }
+    },
+
+    "fetch_today": {
+        "function": date.today,
+        "dto": None,
+        "schema": {
+            "type": "function",
+            "name": "fetch_today",
+            "description": "Obtiene el dia de hoy",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    }
 }

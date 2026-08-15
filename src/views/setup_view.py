@@ -1,13 +1,11 @@
+import logging
+
 import flet as ft
 from flet import Icons as icons
 
-from themes.themes import Theme
-from controllers.controller import (
-    UserDataController,
-    DatabaseController
-)
 from components.dialogs import Dialogs
-import logging
+from controllers.controller import DatabaseController, UserDataController
+from themes.themes import Theme
 
 
 class Setup:

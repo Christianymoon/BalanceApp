@@ -1,15 +1,12 @@
-from controllers.controller import (
-    PassiveController,
-    ActiveController,
-    CategoriesController,
-)
+import flet as ft
+from flet import Icons as icons
 
+from controllers.passives.controller import PassiveController
+from controllers.actives.controller import ActiveController
+from controllers.categories.controller import CategoriesController
 from components.dialogs import Dialogs
 from controllers.date_groups import get_group_date, create_month_separator
-
 from themes.themes import Theme
-from flet import Icons as icons
-import flet as ft
 
 
 class PassiveSection:

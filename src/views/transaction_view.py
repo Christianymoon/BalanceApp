@@ -1,18 +1,12 @@
-from asyncio.subprocess import SubprocessStreamProtocol
-from controllers.controller import (
-    TransactionController,
-    TransactionType,
-    ActiveController,
-    CategoriesController,
-)
-
-from dto.transactions import TransactionDTO
+import flet as ft
+from flet import Icons as icons
 
 from components.dialogs import Dialogs
-
+from controllers.actives.controller import ActiveController
+from controllers.categories.controller import CategoriesController
+from controllers.transactions.controller import TransactionController, TransactionType
+from dto.transactions import TransactionDTO
 from themes.themes import Theme
-from flet import Icons as icons
-import flet as ft
 
 
 class TransactionSection:

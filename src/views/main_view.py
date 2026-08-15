@@ -1,20 +1,18 @@
-from dto.transactions import TransactionFilterDTO
+from datetime import date, timedelta
+
 import flet as ft
 from flet import Icons as icons
 
-from controllers.controller import (
-    TransactionController,
-    LiquidController,
-    BalanceController,
-    SearchController,
-    CategoriesController
-)
-
-from themes.themes import Theme
 from client.client import ClientStorage
-from dto.transactions import TransactionOutputDTO
-from controllers.date_groups import get_group_date, create_week_separator
+from controllers.balance.controller import BalanceController
+from controllers.categories.controller import CategoriesController
+from controllers.controller import SearchController
+from controllers.date_groups import create_week_separator, get_group_date
+from controllers.liquid.controller import LiquidController
+from controllers.transactions.controller import TransactionController
 from controllers.transactions.statistics import fetch_summary
+from dto.transactions import TransactionFilterDTO, TransactionOutputDTO
+from themes.themes import Theme
 
 
 class MainSection:
@@ -58,11 +56,15 @@ class MainSection:
                 self.text_name.value = "Ingresos"
                 self.text_amount.value = amount
 
+                self.secondary_text_amount.visible = False
+
             else:
                 filter = TransactionFilterDTO(is_income=False)
                 amount = fetch_summary(filter)
                 self.text_name.value = "Gastos"
                 self.text_amount.value = amount
+
+                self.secondary_text_amount.visible = False
 
         else:
             if self.portfolio_mode_state:
@@ -70,11 +72,31 @@ class MainSection:
                 self.text_name.value = "Liquidez"
                 self.text_amount.value = liquid_amount
 
+                week_start = get_group_date(
+                    date=date.today().strftime("%d/%m/%Y %H:%M"), timelapse="week")
+                filter = TransactionFilterDTO(
+                    date_from=week_start,
+                    date_to=week_start + timedelta(days=6),
+                    is_income=True
+                )
+
+                self.secondary_text_amount.value = f"Ingreso Semanal: {fetch_summary(filter)}"
+
             else:
                 balance_amount = BalanceController.controller_fetch_balance(
                     formated=True)
                 self.text_name.value = "Capital"
                 self.text_amount.value = balance_amount
+
+                week_start = get_group_date(
+                    date=date.today().strftime("%d/%m/%Y %H:%M"), timelapse="week")
+                filter = TransactionFilterDTO(
+                    date_from=week_start,
+                    date_to=week_start + timedelta(days=6),
+                    is_income=False
+                )
+
+                self.secondary_text_amount.value = f"Gasto Semanal: {fetch_summary(filter)}"
 
         self.page.update()
 
@@ -233,6 +255,9 @@ class MainSection:
             border=ft.border.only(bottom=ft.BorderSide(1, self.theme.fg)),
         )
 
+        self.secondary_text_amount = ft.Text(
+            value="$ 0.00", color=self.theme.text_secondary, size=14)
+
         self.portfolio_section = ft.Container(
             content=ft.Column([
                 ft.Row([
@@ -251,6 +276,9 @@ class MainSection:
                         icon=icons.BAR_CHART, icon_color=self.theme.blue_color, icon_size=24, on_click=lambda e: self.page.go("/balance")
                     )
                 ], spacing=10),
+                ft.Row([
+                    self.secondary_text_amount
+                ], spacing=10)
             ], spacing=5),
             padding=ft.padding.symmetric(horizontal=20, vertical=20),
             margin=ft.margin.symmetric(horizontal=0, vertical=8),
